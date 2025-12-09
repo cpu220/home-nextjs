@@ -5,9 +5,10 @@
   "scripts": {
     "d":"npm install && npm run build && npm run dev",
     "bd":"next build && next start", 
-    "dev": "next dev",
+    "dev": "node start.js",
     "build": "next build",
-    "start": "next start",
+    "start": "node start.js",
+    "start:prod": "next start -p ${PORT:-3001}",
     "lint": "next lint"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.17",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.33",
@@ -27,4 +29,3 @@
     "typescript": "^5.3.3"
   }
 }
-
