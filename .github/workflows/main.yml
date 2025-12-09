@@ -112,11 +112,14 @@ jobs:
             if [ -f "package.json" ]; then
               log "检测到package.json，开始安装依赖"
               
-              # 为了防止任何脚本执行，先备份package.json并临时修改以移除所有scripts
-              cp package.json package.json.bak || { log "错误: 无法备份package.json"; exit 1; }
+              # 检查Node.js和npm版本
+              log "检查Node.js和npm版本兼容性"
+              NODE_VERSION=$(node -v)
+              NPM_VERSION=$(npm -v)
+              log "当前环境: Node.js $NODE_VERSION, npm $NPM_VERSION"
               
-              # 使用sed移除scripts部分（在Linux环境中）
-              sed -i '/"scripts": {/,/}/c\  "scripts": {}' package.json || { log "错误: 无法修改package.json"; exit 1; }
+              # 备份package.json以确保安全
+              cp package.json package.json.bak || { log "错误: 无法备份package.json"; exit 1; }
               
               # 设置环境变量避免执行任何脚本
               export npm_config_ignore_scripts=true
@@ -124,18 +127,26 @@ jobs:
               # 安全安装依赖，使用多种选项确保脚本不被执行
               log "安装npm依赖（跳过所有scripts）"
               
+              # 对于Node.js 20+和npm 10+版本，添加特定优化
+              log "为Node.js 20+和npm 10+优化安装配置"
+              
+              # 清理npm缓存避免版本冲突问题
+              log "清理npm缓存"
+              npm cache clean --force || log "注意: 缓存清理非关键步骤，继续执行"
+              
               # 检查是否存在package-lock.json或npm-shrinkwrap.json
               if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
                 # 使用npm ci进行更严格的依赖安装
-                npm ci --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                log "检测到锁文件，使用npm ci安装依赖"
+                npm ci --ignore-scripts --no-audit --prefer-offline --loglevel=error --legacy-peer-deps || { 
                   log "错误: npm ci失败，尝试使用npm install作为备选方案"
-                  npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                  npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error --legacy-peer-deps || { 
                     log "错误: npm install也失败"
                     log "依赖安装故障排除建议:"
                     log "1. 确保package.json格式正确且依赖版本兼容"
                     log "2. 检查网络连接是否正常"
-                    log "3. 尝试在项目根目录运行npm cache clean --force清理缓存"
-                    log "4. 检查Node.js和npm版本是否符合项目要求"
+                    log "3. 执行了npm缓存清理，请检查Node.js 20.19.5和npm 10.8.2的兼容性"
+                    log "4. 可能需要更新package.json中的依赖版本以兼容最新Node.js环境"
                     exit 1;
                   }
                 }
@@ -143,24 +154,32 @@ jobs:
                 # 没有锁文件，使用npm install
                 log "未检测到package-lock.json，使用npm install安装依赖"
                 log "提示: 为了获得一致的依赖版本，建议在开发环境运行npm install生成package-lock.json"
-                npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error --legacy-peer-deps || { 
                   log "错误: npm install失败"
                   log "依赖安装故障排除建议:"
                   log "1. 确保package.json格式正确且依赖版本兼容"
                   log "2. 检查网络连接是否正常"
-                  log "3. 尝试在项目根目录运行npm cache clean --force清理缓存"
-                  log "4. 检查Node.js和npm版本是否符合项目要求"
+                  log "3. 已执行npm缓存清理，请检查Node.js 20.19.5和npm 10.8.2的兼容性"
+                  log "4. 可能需要更新package.json中的依赖版本以兼容最新Node.js环境"
                   exit 1;
                 }
               fi
               log "依赖安装成功"
               
-              # 恢复原始package.json以便可以构建
-              mv package.json.bak package.json || { log "警告: 无法恢复原始package.json"; }
+              # 清理备份文件
+              rm -f package.json.bak || { log "警告: 无法删除备份的package.json"; }
               
               # 使用NODE_ENV=production确保生产环境构建
               log "开始生产环境构建"
-              NODE_ENV=production npm run build --no-progress || { log "错误: 构建失败"; exit 1; }
+              # 添加--max-old-space-size避免内存问题，特别适用于Node.js 20+环境
+              NODE_ENV=production NODE_OPTIONS="--max-old-space-size=4096" npm run build --no-progress || { 
+                log "错误: 构建失败"
+                log "构建故障排除:"
+                log "1. Node.js 20+可能需要更多内存资源"
+                log "2. 检查是否有TypeScript编译错误"
+                log "3. 验证项目依赖是否与Next.js 14兼容"
+                exit 1;
+              }
               log "构建成功完成"
             else
               log "错误: package.json not found"
