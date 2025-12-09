@@ -5,17 +5,9 @@ on:
     branches:
       - main # 当推送到main分支时触发工作流
 
-# 定义SSH连接参数模板
-ssh_connection: &ssh_connection
-  host: ${{ secrets.SERVER_HOST }}
-  username: ${{ secrets.SERVER_USERNAME }}
-  password: ${{ secrets.SERVER_PASSWORD }}
-  port: ${{ secrets.SERVER_PORT }}
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest # 使用Ubuntu操作系统作为运行环境
-
     steps:
       - name: 检出代码 # 步骤1：从仓库检出代码
         uses: actions/checkout@v3
@@ -25,7 +17,10 @@ jobs:
       - name: 步骤1 - 检查目录并初始化Git仓库
         uses: appleboy/ssh-action@master
         with:
-          <<: *ssh_connection
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             echo "=== 开始部署步骤1 - 检查目录并初始化Git仓库 ==="
             
@@ -66,7 +61,10 @@ jobs:
       - name: 步骤2 - 从远程仓库拉取最新代码
         uses: appleboy/ssh-action@master
         with:
-          <<: *ssh_connection
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             echo "=== 开始部署步骤2 - 从远程仓库拉取最新代码 ==="
             
@@ -92,7 +90,10 @@ jobs:
       - name: 步骤3 - 安装项目依赖
         uses: appleboy/ssh-action@master
         with:
-          <<: *ssh_connection
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             echo "=== 开始部署步骤3 - 安装项目依赖 ==="
             
@@ -113,7 +114,10 @@ jobs:
       - name: 步骤4 - 构建项目
         uses: appleboy/ssh-action@master
         with:
-          <<: *ssh_connection
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             echo "=== 开始部署步骤4 - 构建项目 ==="
             
@@ -137,7 +141,10 @@ jobs:
       - name: 步骤5 - 使用PM2重启应用
         uses: appleboy/ssh-action@master
         with:
-          <<: *ssh_connection
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             echo "=== 开始部署步骤5 - 使用PM2重启应用 ==="
             
