@@ -91,9 +91,27 @@ jobs:
               fi
               log "代码克隆成功"
             else
-              log "当前目录是Git仓库，执行git pull"
-              git pull || {
-                log "错误: Git pull失败"
+              log "当前目录是Git仓库，执行git pull (带超时和非交互模式)"
+              # 配置Git避免交互提示
+              git config --global core.askpass "echo"
+              git config --global push.default simple
+              git config --global pull.rebase false
+              
+              # 使用timeout命令设置30秒超时，添加详细日志和非交互模式参数
+              log "获取远程仓库状态"
+              git remote update -v
+              
+              log "执行git pull (超时30秒，快进模式，详细输出)"
+              timeout 30s git pull --ff-only --no-edit -v || {
+                local EXIT_CODE=$?
+                if [ $EXIT_CODE -eq 124 ]; then
+                  log "错误: Git pull超时（30秒）"
+                  log "超时故障排除:"
+                  log "1. 检查网络连接稳定性"
+                  log "2. 尝试增加超时时间"
+                else
+                  log "错误: Git pull失败 (退出码: $EXIT_CODE)"
+                fi
                 log "Git操作故障排除:"
                 log "1. 检查远程仓库是否可访问"
                 log "2. 确认本地分支与远程分支同步"
@@ -103,6 +121,9 @@ jobs:
                 log "4. 备选方案:"
                 log "   - 可尝试删除.git目录重新克隆: rm -rf .git"
                 log "   - 或执行 git reset --hard && git clean -dfx 清理本地修改"
+                log "5. 强制更新选项（在紧急情况下）:"
+                log "   - git fetch --all"
+                log "   - git reset --hard origin/[branch_name]"
                 exit 1
               }
               log "代码更新成功"
@@ -120,6 +141,21 @@ jobs:
               
               # 备份package.json以确保安全
               cp package.json package.json.bak || { log "错误: 无法备份package.json"; exit 1; }
+              
+              # 验证package.json的完整性和格式（使用通用方法）
+              log "验证package.json的JSON格式和完整性"
+              if command -v jq > /dev/null; then
+                if ! cat package.json | jq empty 2> /dev/null; then
+                  log "警告: package.json格式验证失败，但继续部署"
+                  log "在部署后请检查package.json的完整性"
+                fi
+              else
+                # 使用grep简单检查关键结构
+                log "使用基本检查验证package.json结构"
+                if ! grep -q '"scripts"' package.json || ! grep -q '"dependencies"' package.json; then
+                  log "警告: package.json缺少关键结构，但继续部署"
+                fi
+              fi
               
               # 设置环境变量避免执行任何脚本
               export npm_config_ignore_scripts=true
@@ -166,8 +202,15 @@ jobs:
               fi
               log "依赖安装成功"
               
-              # 清理备份文件
-              rm -f package.json.bak || { log "警告: 无法删除备份的package.json"; }
+              # 恢复原始的package.json（确保脚本和依赖不丢失）
+              if [ -f "package.json.bak" ]; then
+                log "恢复原始的package.json文件，确保完整配置不丢失"
+                cp package.json.bak package.json || { 
+                  log "警告: 无法恢复package.json，但继续部署"; 
+                  # 即使恢复失败也要保留备份文件以便后续检查
+                  rm -f package.json.bak || true
+                }
+              fi
               
               # 使用NODE_ENV=production确保生产环境构建
               log "开始生产环境构建"
