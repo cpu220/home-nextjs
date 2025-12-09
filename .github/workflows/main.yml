@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }} # 从GitHub Secrets中获取服务器密码
           port: ${{ secrets.SERVER_PORT }} # 从GitHub Secrets中获取服务器端口号
           script: |
-            cd /www/wwwroot/html/home  # 切换到项目目录
+            cd /www/wwwroot/html/home-test  # 切换到项目目录
             git pull  # 从远程仓库拉取最新代码
             npm ci --no-scripts  # 使用npm ci安装依赖，不执行任何scripts
             npm run build  # 执行构建脚本
