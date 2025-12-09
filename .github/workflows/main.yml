@@ -131,15 +131,7 @@ jobs:
             ls -la
             
             # 确定使用的包管理器
-            USE_NPM=false
-            if ! command -v pnpm &> /dev/null; then
-              echo "pnpm不可用，尝试安装..."
-              npm install -g pnpm 2>/dev/null || {
-                echo "✓ 使用npm安装依赖"
-                USE_NPM=true
-              }
-            fi
-            [ "$USE_NPM" = false ] && echo "✓ 使用pnpm安装依赖"
+            echo "✓ 使用npm安装依赖"
             
             # 查找package.json位置
             if [ ! -f "package.json" ]; then
@@ -157,11 +149,7 @@ jobs:
             
             # 安装依赖
             echo "开始安装依赖..."
-            if [ "$USE_NPM" = true ]; then
-              npm install --verbose
-            else
-              pnpm install --verbose
-            fi
+            npm install --verbose
             
             # 验证安装结果
             if [ $? -eq 0 ]; then
@@ -203,28 +191,13 @@ jobs:
             # 执行构建
             echo "开始构建项目..."
             
-            # 优先使用pnpm，如果失败则回退到npm
-            if command -v pnpm &> /dev/null; then
-              echo "使用pnpm构建..."
-              if pnpm run build --verbose; then
-                echo "✓ pnpm构建成功"
-              else
-                echo "尝试使用npm构建..."
-                if npm run build --verbose; then
-                  echo "✓ npm构建成功"
-                else
-                  echo "✗ 构建失败！"
-                  exit 1
-                fi
-              fi
+            # 使用npm构建
+            echo "使用npm构建..."
+            if npm run build --verbose; then
+              echo "✓ npm构建成功"
             else
-              echo "使用npm构建..."
-              if npm run build --verbose; then
-                echo "✓ npm构建成功"
-              else
-                echo "✗ 构建失败！"
-                exit 1
-              fi
+              echo "✗ 构建失败！"
+              exit 1
             fi
             
             echo "=== 步骤4 - 已完成 ==="
