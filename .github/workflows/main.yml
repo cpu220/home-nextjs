@@ -119,12 +119,9 @@ jobs:
                       }
                       unzip -q master.zip && rm master.zip && mv */* .
                     } || {
-                      unzip -q main.zip && rm main.zip && mv */* .
-                    }
-                  }
-                }
+                unzip -q main.zip && rm main.zip && mv */* .
               }
-            }
+            fi
             
             cd "$PROJECT_DIR"
             # 确保我们在正确的目录中
@@ -132,39 +129,41 @@ jobs:
             pwd
             
             # 确认代码已成功获取
-              echo "获取代码后的目录内容："
-              ls -la
+            echo "获取代码后的目录内容："
+            ls -la
+            
+            # 检查package.json是否存在，确保代码已正确下载
+            if [ ! -f "package.json" ]; then
+              echo "警告：未找到package.json文件，检查代码获取是否完整..."
               
-              # 检查package.json是否存在，确保代码已正确下载
-              if [ ! -f "package.json" ]; then
-                echo "警告：未找到package.json文件，检查代码获取是否完整..."
+              # 如果当前目录下没有package.json，检查是否有子目录
+              subdirs=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name ".")
+              if [ -n "$subdirs" ]; then
+                echo "发现子目录，尝试将内容移动到当前目录..."
+                for dir in $subdirs; do
+                  echo "移动 $dir 中的内容..."
+                  mv "$dir"/* . 2>/dev/null || echo "无法移动 $dir 中的内容"
+                  rmdir "$dir" 2>/dev/null || echo "无法删除空目录 $dir"
+                done
                 
-                # 如果当前目录下没有package.json，检查是否有子目录
-                subdirs=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name ".")
-                if [ -n "$subdirs" ]; then
-                  echo "发现子目录，尝试将内容移动到当前目录..."
-                  for dir in $subdirs; do
-                    echo "移动 $dir 中的文件..."
-                    mv "$dir"/* . 2>/dev/null || true
-                    rm -rf "$dir"  # 清理空目录
-                  done
-                  
-                  # 再次检查package.json
-                  if [ ! -f "package.json" ]; then
-                    echo "警告：移动文件后仍未找到package.json文件"
-                  else
-                    echo "成功找到package.json文件"
-                  fi
+                # 再次检查package.json
+                if [ -f "package.json" ]; then
+                  echo "成功：在移动内容后找到package.json文件"
+                else
+                  echo "仍然未找到package.json文件，但代码获取过程已完成"
                 fi
-                
-                # 显示最新的目录内容
-                echo "更新后的目录内容："
-                ls -la
               else
-                echo "成功找到package.json文件，代码获取完成"
+                echo "没有发现相关子目录，但代码获取过程已完成"
               fi
               
-              echo "=== 步骤2 - 已完成 ==="
+              # 显示最新的目录内容
+              echo "更新后的目录内容："
+              ls -la
+            else
+              echo "成功找到package.json文件，代码获取完成"
+            fi
+            
+            echo "=== 步骤2 - 已完成 ==="
 
       - name: 步骤3 - 安装项目依赖
         uses: appleboy/ssh-action@master
@@ -179,29 +178,50 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             cd "$PROJECT_DIR"
             
-            # 再次检查package.json文件，确保可以继续安装依赖
-            if [ -f "package.json" ]; then
-              echo "找到package.json文件，正在安装依赖..."
-              npm install --verbose
-            else
-              echo "警告：未找到package.json文件，尝试再次检查目录结构..."
+            # 简化的package.json检查和依赖安装逻辑
+              echo "检查package.json文件..."
               ls -la
               
-              # 检查是否有其他目录可能包含代码
-              find . -name "package.json" 2>/dev/null || {
-                echo "错误：无法找到package.json文件，依赖安装失败！"
-                echo "请检查代码获取是否成功，或仓库是否包含package.json文件"
-                exit 1
-              }
-              
-              # 如果找到了package.json但不在当前目录，尝试切换到正确的目录
-              pkg_dir=$(find . -name "package.json" -exec dirname {} \; | head -1)
-              if [ "$pkg_dir" != "." ]; then
-                echo "在 $pkg_dir 目录找到package.json，切换到此目录..."
-                cd "$pkg_dir"
-                npm install --verbose
+              # 安装pnpm（如果未安装）
+              if ! command -v pnpm &> /dev/null; then
+                echo "pnpm未安装，尝试安装pnpm..."
+                npm install -g pnpm || {
+                  echo "安装pnpm失败，回退到npm..."
+                  USE_NPM=true
+                }
               fi
-            }
+              
+              # 检查当前目录是否有package.json
+              if [ -f "package.json" ]; then
+                echo "找到package.json文件，正在安装依赖..."
+                if [ "$USE_NPM" = true ]; then
+                  npm install --verbose
+                else
+                  pnpm install --verbose
+                fi
+              else
+                echo "当前目录未找到package.json，尝试查找它的位置..."
+                
+                # 使用简单的命令查找package.json
+                PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
+                
+                if [ -z "$PKG_PATH" ]; then
+                  echo "错误：无法找到package.json文件！"
+                  echo "代码获取可能不完整，请检查仓库内容。"
+                  exit 1
+                else
+                  echo "在 $PKG_PATH 找到package.json文件"
+                  PKG_DIR=$(dirname "$PKG_PATH")
+                  echo "切换到目录: $PKG_DIR"
+                  cd "$PKG_DIR"
+                  echo "正在安装依赖..."
+                  if [ "$USE_NPM" = true ]; then
+                    npm install --verbose
+                  else
+                    pnpm install --verbose
+                  fi
+                fi
+              fi
             
             echo "=== 步骤3 - 已完成 ==="
 
@@ -218,16 +238,44 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             cd "$PROJECT_DIR"
             
-            # 执行构建命令
-            echo "正在构建项目..."
-            npm run build --verbose
-            
-            # 检查构建结果
-            if [ $? -eq 0 ]; then
-              echo "项目构建成功！"
+            # 检查是否存在package.json文件并设置构建命令
+            if [ -f "package.json" ]; then
+              # 检查pnpm是否可用
+              if command -v pnpm &> /dev/null; then
+                echo "正在使用pnpm构建项目..."
+                pnpm run build --verbose || {
+                  echo "pnpm构建失败，尝试使用npm构建..."
+                  npm run build --verbose
+                }
+              else
+                echo "pnpm不可用，使用npm构建项目..."
+                npm run build --verbose
+              fi
+              
+              # 检查构建结果
+              if [ $? -eq 0 ]; then
+                echo "项目构建成功！"
+              else
+                echo "错误：项目构建失败！"
+                exit 1
+              fi
             else
-              echo "错误：项目构建失败！"
-              exit 1
+              echo "警告：未找到package.json文件，无法执行构建命令"
+              # 尝试查找package.json位置
+              PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
+              if [ -n "$PKG_PATH" ]; then
+                PKG_DIR=$(dirname "$PKG_PATH")
+                echo "发现package.json在 $PKG_DIR 目录，切换目录重新构建..."
+                cd "$PKG_DIR"
+                if command -v pnpm &> /dev/null; then
+                  pnpm run build --verbose
+                else
+                  npm run build --verbose
+                fi
+              else
+                echo "致命错误：无法找到package.json文件，无法完成构建！"
+                exit 1
+              fi
             fi
             
             echo "=== 步骤4 - 已完成 ==="
