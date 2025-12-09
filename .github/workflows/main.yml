@@ -55,6 +55,10 @@ jobs:
             cd "$DEPLOY_DIR" || { log "错误: 无法进入目录"; exit 1; }
             log "已进入部署目录"
             
+            # 配置Git安全目录以解决权限检查问题
+            log "配置Git安全目录以避免权限问题"
+            git config --global --add safe.directory "$DEPLOY_DIR"
+            
             # 检查是否是Git仓库并获取代码
             if [ ! -d ".git" ]; then
               log "当前目录不是Git仓库，开始克隆代码"
@@ -90,10 +94,15 @@ jobs:
               log "当前目录是Git仓库，执行git pull"
               git pull || {
                 log "错误: Git pull失败"
-                log "故障排除:"
-                log "- 检查远程仓库是否可访问"
-                log "- 确认本地分支与远程分支同步"
-                log "- 必要时可尝试删除.git目录重新克隆"
+                log "Git操作故障排除:"
+                log "1. 检查远程仓库是否可访问"
+                log "2. 确认本地分支与远程分支同步"
+                log "3. 权限问题解决:"
+                log "   - 已配置safe.directory，但如仍有问题可检查目录所有者"
+                log "   - 可能需要: chown -R [当前用户] $DEPLOY_DIR"
+                log "4. 备选方案:"
+                log "   - 可尝试删除.git目录重新克隆: rm -rf .git"
+                log "   - 或执行 git reset --hard && git clean -dfx 清理本地修改"
                 exit 1
               }
               log "代码更新成功"
