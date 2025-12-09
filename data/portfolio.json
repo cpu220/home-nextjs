@@ -1,0 +1,27 @@
+[
+  {
+    "id": "1",
+    "title": "示例项目 1",
+    "description": "这是一个示例项目，展示了如何使用 Next.js 构建 SSR 应用",
+    "url": "https://github.com",
+    "tags": ["Next.js", "React", "TypeScript"],
+    "category": "Web 开发"
+  },
+  {
+    "id": "2",
+    "title": "示例项目 2",
+    "description": "另一个示例项目，用于演示作品卡片的展示效果",
+    "url": "https://nextjs.org",
+    "tags": ["Next.js", "SSR"],
+    "category": "Web 开发"
+  },
+  {
+    "id": "3",
+    "title": "示例项目 3",
+    "description": "展示响应式设计和现代化 UI 的示例",
+    "url": "https://vercel.com",
+    "tags": ["React", "Tailwind CSS"],
+    "category": "UI/UX"
+  }
+]
+
