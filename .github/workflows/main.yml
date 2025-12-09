@@ -45,15 +45,15 @@ jobs:
               # 设置Git用户信息
               git config user.name "GitHub Actions"
               git config user.email "actions@github.com"
-              # 添加远程仓库（这里需要实际的仓库URL）
-              git remote add origin https://github.com/cpu***0/home-nextjs.git
+              # 添加远程仓库（使用当前工作流所在的仓库URL）
+              git remote add origin https://github.com/${{ github.repository }}.git
               echo "Git仓库已初始化并添加远程仓库"
             else
               echo "Git仓库已存在，检查远程配置..."
               # 检查远程仓库配置是否正确
               git remote -v
               # 确保远程仓库配置正确
-              git remote set-url origin https://github.com/cpu***0/home-nextjs.git
+              git remote set-url origin https://github.com/${{ github.repository }}.git
             fi
             
             echo "=== 步骤1 - 已完成 ==="
@@ -75,11 +75,50 @@ jobs:
             echo "当前目录内容："
             ls -la
             
-            # 尝试从远程仓库拉取代码
+            # 获取当前分支名称（使用GitHub Actions上下文）
+            CURRENT_BRANCH="${{ github.ref_name }}"
+            echo "当前分支: $CURRENT_BRANCH"
+            
+            # 显示远程仓库配置，用于调试
+            echo "远程仓库配置："
+            git remote -v
+            
+            # 尝试从远程仓库拉取代码，添加更详细的错误处理
             echo "正在从远程仓库拉取最新代码..."
-            git fetch --all
-            git checkout -f main
-            git pull origin main
+            git fetch --all -v 2>&1 || {
+              echo "错误：无法从远程仓库获取更新！请检查仓库URL是否正确且可访问。"
+              echo "尝试使用HTTP基本认证方式重试..."
+              # 使用GitHub Actions token尝试访问
+              git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+              git fetch --all -v 2>&1 || {
+                echo "致命错误：无法获取代码，部署失败！"
+                exit 1
+              }
+            }
+            
+            # 切换到当前分支
+            git checkout -f "$CURRENT_BRANCH" 2>&1 || {
+              echo "警告：无法切换到$CURRENT_BRANCH分支，尝试切换到main分支..."
+              git checkout -f main 2>&1 || {
+                echo "警告：无法切换到main分支，尝试切换到master分支..."
+                git checkout -f master 2>&1 || {
+                  echo "致命错误：无法切换到任何有效分支！"
+                  exit 1
+                }
+              }
+            }
+            
+            # 拉取最新代码
+            git pull origin "$CURRENT_BRANCH" 2>&1 || {
+              echo "警告：无法从$CURRENT_BRANCH分支拉取，尝试从main分支拉取..."
+              git pull origin main 2>&1 || {
+                echo "警告：无法从main分支拉取，尝试从master分支拉取..."
+                git pull origin master 2>&1 || {
+                  echo "致命错误：无法拉取任何分支的代码！"
+                  exit 1
+                }
+              }
+            }
             
             # 确认代码已成功拉取
             echo "拉取后的目录内容："
