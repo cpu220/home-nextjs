@@ -14,7 +14,7 @@ jobs:
         with:
           persist-credentials: false # 不保留凭据
 
-      - name: 步骤1 - 检查目录并初始化Git仓库
+      - name: 步骤1 - 检查目录
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            echo "=== 开始部署步骤1 - 检查目录并初始化Git仓库 ==="
+            echo "=== 开始部署步骤1 - 检查目录 ==="
             
             # 项目路径
             PROJECT_DIR="/www/wwwroot/html/home-test"
@@ -30,22 +30,6 @@ jobs:
             # 检查并创建目录
             [ ! -d "$PROJECT_DIR" ] && mkdir -p "$PROJECT_DIR"
             echo "项目目录: $PROJECT_DIR"
-            
-            # 进入项目目录
-            cd "$PROJECT_DIR"
-            
-            # 初始化Git仓库（如果不存在）
-            if [ ! -d ".git" ]; then
-              echo "初始化Git仓库..."
-              git init
-              git config user.name "GitHub Actions"
-              git config user.email "actions@github.com"
-              git remote add origin https://github.com/${{ github.repository }}.git
-              git config --global credential.helper 'cache --timeout=3600'
-            else
-              echo "更新远程仓库配置..."
-              git remote set-url origin https://github.com/${{ github.repository }}.git
-            fi
             
             echo "=== 步骤1 - 已完成 ==="
 
@@ -62,56 +46,34 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             CURRENT_BRANCH="${{ github.ref_name }}"
             REPO_URL="https://github.com/${{ github.repository }}.git"
-            REPO_NAME="${{ github.repository }}"
-            REPO_SHORT_NAME="${REPO_NAME##*/}"
             
             # 准备目录
             cd "$(dirname "$PROJECT_DIR")"
             rm -rf "$PROJECT_DIR" 
             mkdir -p "$PROJECT_DIR"
             
-            echo "尝试获取代码..."
+            echo "使用HTTPS克隆当前分支: $CURRENT_BRANCH"
             
-            # 方法1：使用HTTPS克隆当前分支
-            if git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "$REPO_URL" "$PROJECT_DIR"; then
-              echo "✓ 成功：使用HTTPS克隆当前分支"
-            # 方法2：使用GitHub Actions token
-            elif git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${REPO_NAME}.git" "$PROJECT_DIR"; then
-              echo "✓ 成功：使用GitHub Actions token"
-            # 方法3：克隆main分支
-            elif git clone --depth 1 --single-branch --branch main "$REPO_URL" "$PROJECT_DIR"; then
-              echo "✓ 成功：克隆main分支"
-            # 方法4：克隆master分支
-            elif git clone --depth 1 --single-branch --branch master "$REPO_URL" "$PROJECT_DIR"; then
-              echo "✓ 成功：克隆master分支"
-            # 方法5：下载main分支压缩包
-            elif cd "$PROJECT_DIR" && wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/main.zip" -O main.zip; then
-              echo "✓ 成功：下载main分支压缩包"
-              unzip -q main.zip && rm main.zip
-              [ -d "${REPO_SHORT_NAME}-main" ] && mv "${REPO_SHORT_NAME}-main"/* . && rmdir "${REPO_SHORT_NAME}-main"
-            # 方法6：下载master分支压缩包
-            elif cd "$PROJECT_DIR" && wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/master.zip" -O master.zip; then
-              echo "✓ 成功：下载master分支压缩包"
-              unzip -q master.zip && rm master.zip
-              [ -d "${REPO_SHORT_NAME}-master" ] && mv "${REPO_SHORT_NAME}-master"/* . && rmdir "${REPO_SHORT_NAME}-master"
-            else
-              echo "✗ 错误：无法获取代码！"
+            # 使用HTTPS直接克隆当前分支
+            if ! git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "$REPO_URL" "$PROJECT_DIR"; then
+              echo "✗ 错误：克隆失败！"
               exit 1
             fi
             
             # 进入目录并检查内容
             cd "$PROJECT_DIR"
-            echo "目录内容："
+            echo "当前工作目录："
+            pwd
+            echo "获取代码后的目录内容："
             ls -la
             
-            # 调整目录结构（如果需要）
-            if [ ! -f "package.json" ]; then
-              echo "尝试修复目录结构..."
-              subdir=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name "." | head -1)
-              [ -n "$subdir" ] && mv "$subdir"/* . 2>/dev/null && rmdir "$subdir" 2>/dev/null
+            # 验证是否找到package.json
+            if [ -f "package.json" ]; then
+              echo "✓ 成功找到package.json文件，代码获取完成"
+            else
+              echo "✗ 错误：未找到package.json文件！"
+              exit 1
             fi
-            
-            [ -f "package.json" ] && echo "✓ 找到package.json文件" || echo "! 未找到package.json文件"
             
             echo "=== 步骤2 - 已完成 ==="
 
