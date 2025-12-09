@@ -244,17 +244,17 @@ jobs:
             
             # 检查PM2进程是否存在，不存在则创建
             echo "正在检查PM2进程状态..."
-            pm2 list | grep -q "dapangmao"
+            pm2 list | grep -q "home"
             if [ $? -ne 0 ]; then
-              echo "PM2进程'dapangmao'不存在，正在创建新进程..."
-              pm2 start npm --name "dapangmao" -- start
+              echo "PM2进程'home'不存在，正在创建新进程..."
+              pm2 start npm --name "home" -- start
             else
-              echo "PM2进程'dapangmao'已存在，正在重启..."
-              pm2 restart dapangmao
+              echo "PM2进程'home'已存在，正在重启..."
+              pm2 restart home
             fi
             
             # 显示PM2进程状态
-            pm2 status dapangmao
+            pm2 status home
             
             echo "=== 步骤5 - 已完成 ==="
             echo "=== 部署过程已成功完成 ==="
