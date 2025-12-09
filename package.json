@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "d":"npm run install && npm run build && npm run dev",
-    "bd":"next build && next start",
-    "install":"npm install ",
+    "d":"npm install && npm run build && npm run dev",
+    "bd":"next build && next start", 
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
