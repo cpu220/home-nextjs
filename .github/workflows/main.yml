@@ -13,7 +13,8 @@ jobs:
       - name: Checkout # 步骤1：从仓库检出代码
         uses: actions/checkout@v3
         with:
-          persist-credentials: false # 不保留凭据
+          persist-credentials: true # 保留凭据
+          fetch-depth: 0
 
       - name: Build and Deploy # 步骤2：构建和部署
         uses: appleboy/ssh-action@master # 使用SSH Action插件
@@ -59,11 +60,42 @@ jobs:
               log "当前目录不是Git仓库，开始克隆代码"
               # 确保目录为空
               find . -maxdepth 1 ! -name '.' -exec rm -rf {} \; 2>/dev/null || true
-              git clone https://github.com/${{ github.repository }} . || { log "错误: Git克隆失败"; exit 1; }
+              
+              # 检查GitHub Token是否存在
+              if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+                log "警告: GITHUB_TOKEN未设置，尝试使用SSH密钥或手动配置PAT"
+                # 尝试使用原始URL但添加更详细的错误处理
+                git clone https://github.com/${{ github.repository }} . || {
+                  log "错误: Git克隆失败，无法进行身份验证"
+                  log "请检查:"
+                  log "1. 确保仓库允许公共访问，或"
+                  log "2. 在GitHub仓库Settings > Secrets中添加正确配置的PAT"
+                  log "3. 确保Token具有repo权限"
+                  exit 1
+                }
+              else
+                # 使用GitHub Token进行身份验证克隆代码
+                GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+                git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} . || {
+                  log "错误: Git克隆失败，Token认证问题"
+                  log "故障排除:"
+                  log "- 检查GITHUB_TOKEN权限配置"
+                  log "- 确保workflow权限设置为可读取仓库"
+                  log "- 对于私有仓库，可能需要配置专用PAT"
+                  exit 1
+                }
+              fi
               log "代码克隆成功"
             else
               log "当前目录是Git仓库，执行git pull"
-              git pull || { log "错误: Git pull失败"; exit 1; }
+              git pull || {
+                log "错误: Git pull失败"
+                log "故障排除:"
+                log "- 检查远程仓库是否可访问"
+                log "- 确认本地分支与远程分支同步"
+                log "- 必要时可尝试删除.git目录重新克隆"
+                exit 1
+              }
               log "代码更新成功"
             fi
             
@@ -82,7 +114,36 @@ jobs:
               
               # 安全安装依赖，使用多种选项确保脚本不被执行
               log "安装npm依赖（跳过所有scripts）"
-              npm ci --ignore-scripts --no-audit --prefer-offline --loglevel=error || { log "错误: npm ci失败"; exit 1; }
+              
+              # 检查是否存在package-lock.json或npm-shrinkwrap.json
+              if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
+                # 使用npm ci进行更严格的依赖安装
+                npm ci --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                  log "错误: npm ci失败，尝试使用npm install作为备选方案"
+                  npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                    log "错误: npm install也失败"
+                    log "依赖安装故障排除建议:"
+                    log "1. 确保package.json格式正确且依赖版本兼容"
+                    log "2. 检查网络连接是否正常"
+                    log "3. 尝试在项目根目录运行npm cache clean --force清理缓存"
+                    log "4. 检查Node.js和npm版本是否符合项目要求"
+                    exit 1;
+                  }
+                }
+              else
+                # 没有锁文件，使用npm install
+                log "未检测到package-lock.json，使用npm install安装依赖"
+                log "提示: 为了获得一致的依赖版本，建议在开发环境运行npm install生成package-lock.json"
+                npm install --ignore-scripts --no-audit --prefer-offline --loglevel=error || { 
+                  log "错误: npm install失败"
+                  log "依赖安装故障排除建议:"
+                  log "1. 确保package.json格式正确且依赖版本兼容"
+                  log "2. 检查网络连接是否正常"
+                  log "3. 尝试在项目根目录运行npm cache clean --force清理缓存"
+                  log "4. 检查Node.js和npm版本是否符合项目要求"
+                  exit 1;
+                }
+              fi
               log "依赖安装成功"
               
               # 恢复原始package.json以便可以构建
