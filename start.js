@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 // 获取PORT环境变量，如果不存在则使用默认值3002
-const port = process.env.PORT || '3002';
+const port = process.env.PORT || '3001';
 
 console.log(`Starting Next.js server on port ${port}...`);
 
