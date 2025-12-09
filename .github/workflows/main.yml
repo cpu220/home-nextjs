@@ -1,31 +1,163 @@
-name: Build and Deploy # 为GitHub Actions工作流命名
+name: 构建和部署 # GitHub Actions 工作流名称
 
 on:
   push:
     branches:
       - main # 当推送到main分支时触发工作流
 
+# 定义SSH连接参数模板
+ssh_connection: &ssh_connection
+  host: ${{ secrets.SERVER_HOST }}
+  username: ${{ secrets.SERVER_USERNAME }}
+  password: ${{ secrets.SERVER_PASSWORD }}
+  port: ${{ secrets.SERVER_PORT }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest # 使用Ubuntu操作系统作为运行环境
 
     steps:
-      - name: Checkout # 步骤1：从仓库检出代码
+      - name: 检出代码 # 步骤1：从仓库检出代码
         uses: actions/checkout@v3
         with:
           persist-credentials: false # 不保留凭据
 
-      - name: Build and Deploy # 步骤2：构建和部署
-        uses: appleboy/ssh-action@master # 使用SSH Action插件
+      - name: 步骤1 - 检查目录并初始化Git仓库
+        uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SERVER_HOST }} # 从GitHub Secrets中获取服务器主机名
-          username: ${{ secrets.SERVER_USERNAME }} # 从GitHub Secrets中获取服务器用户名
-          password: ${{ secrets.SERVER_PASSWORD }} # 从GitHub Secrets中获取服务器密码
-          port: ${{ secrets.SERVER_PORT }} # 从GitHub Secrets中获取服务器端口号
+          <<: *ssh_connection
           script: |
-            cd /www/wwwroot/html/home-test # 切换到项目目录
-            git pull  # 从远程仓库拉取最新代码
-            npm install  # 安装项目依赖
-            npm run build  # 执行构建脚本
-            pm2 restart dapangmao --interpreter none -- start  # 使用PM2重启应用程序
+            echo "=== 开始部署步骤1 - 检查目录并初始化Git仓库 ==="
+            
+            # 项目路径
+            PROJECT_DIR="/www/wwwroot/html/home-test"
+            
+            # 检查目录是否存在，不存在则创建
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "项目目录不存在，正在创建目录..."
+              mkdir -p "$PROJECT_DIR"
+            else
+              echo "项目目录已存在: $PROJECT_DIR"
+            fi
+            
+            # 进入项目目录
+            cd "$PROJECT_DIR"
+            
+            # 检查.git目录是否存在，不存在则初始化Git仓库
+            if [ ! -d ".git" ]; then
+              echo ".git目录不存在，正在初始化Git仓库..."
+              git init
+              # 设置Git用户信息
+              git config user.name "GitHub Actions"
+              git config user.email "actions@github.com"
+              # 添加远程仓库（这里需要实际的仓库URL）
+              git remote add origin https://github.com/cpu***0/home-nextjs.git
+              echo "Git仓库已初始化并添加远程仓库"
+            else
+              echo "Git仓库已存在，检查远程配置..."
+              # 检查远程仓库配置是否正确
+              git remote -v
+              # 确保远程仓库配置正确
+              git remote set-url origin https://github.com/cpu***0/home-nextjs.git
+            fi
+            
+            echo "=== 步骤1 - 已完成 ==="
+
+      - name: 步骤2 - 从远程仓库拉取最新代码
+        uses: appleboy/ssh-action@master
+        with:
+          <<: *ssh_connection
+          script: |
+            echo "=== 开始部署步骤2 - 从远程仓库拉取最新代码 ==="
+            
+            PROJECT_DIR="/www/wwwroot/html/home-test"
+            cd "$PROJECT_DIR"
+            
+            # 获取当前目录内容以确认我们在正确的目录中
+            echo "当前目录内容："
+            ls -la
+            
+            # 尝试从远程仓库拉取代码
+            echo "正在从远程仓库拉取最新代码..."
+            git fetch --all
+            git checkout -f main
+            git pull origin main
+            
+            # 确认代码已成功拉取
+            echo "拉取后的目录内容："
+            ls -la
+            
+            echo "=== 步骤2 - 已完成 ==="
+
+      - name: 步骤3 - 安装项目依赖
+        uses: appleboy/ssh-action@master
+        with:
+          <<: *ssh_connection
+          script: |
+            echo "=== 开始部署步骤3 - 安装项目依赖 ==="
+            
+            PROJECT_DIR="/www/wwwroot/html/home-test"
+            cd "$PROJECT_DIR"
+            
+            # 确认package.json文件存在
+            if [ -f "package.json" ]; then
+              echo "找到package.json文件，正在安装依赖..."
+              npm install --verbose
+            else
+              echo "错误：未找到package.json文件！"
+              exit 1
+            fi
+            
+            echo "=== 步骤3 - 已完成 ==="
+
+      - name: 步骤4 - 构建项目
+        uses: appleboy/ssh-action@master
+        with:
+          <<: *ssh_connection
+          script: |
+            echo "=== 开始部署步骤4 - 构建项目 ==="
+            
+            PROJECT_DIR="/www/wwwroot/html/home-test"
+            cd "$PROJECT_DIR"
+            
+            # 执行构建命令
+            echo "正在构建项目..."
+            npm run build --verbose
+            
+            # 检查构建结果
+            if [ $? -eq 0 ]; then
+              echo "项目构建成功！"
+            else
+              echo "错误：项目构建失败！"
+              exit 1
+            fi
+            
+            echo "=== 步骤4 - 已完成 ==="
+
+      - name: 步骤5 - 使用PM2重启应用
+        uses: appleboy/ssh-action@master
+        with:
+          <<: *ssh_connection
+          script: |
+            echo "=== 开始部署步骤5 - 使用PM2重启应用 ==="
+            
+            PROJECT_DIR="/www/wwwroot/html/home-test"
+            cd "$PROJECT_DIR"
+            
+            # 检查PM2进程是否存在，不存在则创建
+            echo "正在检查PM2进程状态..."
+            pm2 list | grep -q "dapangmao"
+            if [ $? -ne 0 ]; then
+              echo "PM2进程'dapangmao'不存在，正在创建新进程..."
+              pm2 start npm --name "dapangmao" -- start
+            else
+              echo "PM2进程'dapangmao'已存在，正在重启..."
+              pm2 restart dapangmao
+            fi
+            
+            # 显示PM2进程状态
+            pm2 status dapangmao
+            
+            echo "=== 步骤5 - 已完成 ==="
+            echo "=== 部署过程已成功完成 ==="
 
