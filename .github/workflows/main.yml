@@ -23,9 +23,82 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }} # 从GitHub Secrets中获取服务器密码
           port: ${{ secrets.SERVER_PORT }} # 从GitHub Secrets中获取服务器端口号
           script: |
-            cd /www/wwwroot/html/home-test  # 切换到项目目录
-            git pull  # 从远程仓库拉取最新代码
-            npm ci --no-scripts  # 使用npm ci安装依赖，不执行任何scripts
-            npm run build  # 执行构建脚本
-            pm2 restart dapangmao --interpreter none -- start  # 使用PM2重启应用程序
+            # 定义日志函数，添加时间戳
+            log() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+            }
+            
+            # 清理函数，确保临时文件被删除
+            cleanup() {
+              log "执行清理..."
+              if [ -f "package.json.bak" ]; then
+                rm -f package.json.bak
+                log "删除临时文件: package.json.bak"
+              fi
+            }
+            
+            # 捕获退出信号，执行清理
+            trap cleanup EXIT
+            
+            log "开始部署流程"
+            
+            # 设置部署目录
+            DEPLOY_DIR="/www/wwwroot/html/home-test"
+            
+            log "检查部署目录: $DEPLOY_DIR"
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              log "部署目录不存在，创建目录"
+              mkdir -p "$DEPLOY_DIR" || { log "错误: 无法创建目录"; exit 1; }
+            fi
+            
+            cd "$DEPLOY_DIR" || { log "错误: 无法进入目录"; exit 1; }
+            log "已进入部署目录"
+            
+            # 检查是否是Git仓库并获取代码
+            if [ ! -d ".git" ]; then
+              log "当前目录不是Git仓库，开始克隆代码"
+              # 确保目录为空
+              find . -maxdepth 1 ! -name '.' -exec rm -rf {} \; 2>/dev/null || true
+              git clone https://github.com/${{ github.repository }} . || { log "错误: Git克隆失败"; exit 1; }
+              log "代码克隆成功"
+            else
+              log "当前目录是Git仓库，执行git pull"
+              git pull || { log "错误: Git pull失败"; exit 1; }
+              log "代码更新成功"
+            fi
+            
+            # 确保package.json存在再执行npm命令
+            if [ -f "package.json" ]; then
+              log "检测到package.json，开始安装依赖"
+              
+              # 为了防止任何脚本执行，先备份package.json并临时修改以移除所有scripts
+              cp package.json package.json.bak || { log "错误: 无法备份package.json"; exit 1; }
+              
+              # 使用sed移除scripts部分（在Linux环境中）
+              sed -i '/"scripts": {/,/}/c\  "scripts": {}' package.json || { log "错误: 无法修改package.json"; exit 1; }
+              
+              # 设置环境变量避免执行任何脚本
+              export npm_config_ignore_scripts=true
+              
+              # 安全安装依赖，使用多种选项确保脚本不被执行
+              log "安装npm依赖（跳过所有scripts）"
+              npm ci --ignore-scripts --no-audit --prefer-offline --loglevel=error || { log "错误: npm ci失败"; exit 1; }
+              log "依赖安装成功"
+              
+              # 恢复原始package.json以便可以构建
+              mv package.json.bak package.json || { log "警告: 无法恢复原始package.json"; }
+              
+              # 使用NODE_ENV=production确保生产环境构建
+              log "开始生产环境构建"
+              NODE_ENV=production npm run build --no-progress || { log "错误: 构建失败"; exit 1; }
+              log "构建成功完成"
+            else
+              log "错误: package.json not found"
+              exit 1
+            fi
+            
+            # 重启应用
+            log "重启应用服务"
+            pm2 restart dapangmao --interpreter none -- start || { log "警告: 应用重启可能失败，请检查PM2状态"; }
+            log "部署流程完成"
 
