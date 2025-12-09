@@ -47,6 +47,9 @@ jobs:
               git config user.email "actions@github.com"
               # 添加远程仓库（使用当前工作流所在的仓库URL）
               git remote add origin https://github.com/${{ github.repository }}.git
+              
+              # 配置凭证缓存以避免频繁提示认证
+              git config --global credential.helper 'cache --timeout=3600'
               echo "Git仓库已初始化并添加远程仓库"
             else
               echo "Git仓库已存在，检查远程配置..."
@@ -54,6 +57,9 @@ jobs:
               git remote -v
               # 确保远程仓库配置正确
               git remote set-url origin https://github.com/${{ github.repository }}.git
+              
+              # 配置凭证缓存以避免频繁提示认证
+              git config --global credential.helper 'cache --timeout=3600'
             fi
             
             echo "=== 步骤1 - 已完成 ==="
@@ -77,54 +83,88 @@ jobs:
             
             # 获取当前分支名称（使用GitHub Actions上下文）
             CURRENT_BRANCH="${{ github.ref_name }}"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+            REPO_NAME="${{ github.repository }}"
+            
             echo "当前分支: $CURRENT_BRANCH"
+            echo "仓库URL: $REPO_URL"
             
             # 显示远程仓库配置，用于调试
             echo "远程仓库配置："
             git remote -v
             
-            # 尝试从远程仓库拉取代码，添加更详细的错误处理
-            echo "正在从远程仓库拉取最新代码..."
-            git fetch --all -v 2>&1 || {
-              echo "错误：无法从远程仓库获取更新！请检查仓库URL是否正确且可访问。"
-              echo "尝试使用HTTP基本认证方式重试..."
-              # 使用GitHub Actions token尝试访问
-              git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-              git fetch --all -v 2>&1 || {
-                echo "致命错误：无法获取代码，部署失败！"
-                exit 1
-              }
-            }
+            # 尝试直接克隆代码作为备选方案
+            echo "尝试使用git clone直接获取代码..."
+            cd ..
+            rm -rf "$PROJECT_DIR"  # 清空目录以确保干净的克隆
+            mkdir -p "$PROJECT_DIR"
             
-            # 切换到当前分支
-            git checkout -f "$CURRENT_BRANCH" 2>&1 || {
-              echo "警告：无法切换到$CURRENT_BRANCH分支，尝试切换到main分支..."
-              git checkout -f main 2>&1 || {
-                echo "警告：无法切换到main分支，尝试切换到master分支..."
-                git checkout -f master 2>&1 || {
-                  echo "致命错误：无法切换到任何有效分支！"
-                  exit 1
+            # 尝试使用HTTPS方式克隆，添加超时设置
+            git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
+              echo "HTTPS克隆失败，尝试使用GitHub Actions token..."
+              git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${REPO_NAME}.git" "$PROJECT_DIR" 2>&1 || {
+                echo "使用token克隆失败，尝试克隆main分支..."
+                git clone --depth 1 --single-branch --branch main "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
+                  echo "克隆main分支失败，尝试克隆master分支..."
+                  git clone --depth 1 --single-branch --branch master "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
+                    echo "Git克隆失败，尝试下载源码压缩包作为备选方案..."
+                    
+                    # 使用wget下载源码压缩包作为备选方案
+                    cd "$PROJECT_DIR"
+                    wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/main.zip" -O main.zip || {
+                      echo "下载main分支压缩包失败，尝试master分支..."
+                      wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/master.zip" -O master.zip || {
+                        echo "致命错误：无法获取代码，所有方法均失败！"
+                        exit 1
+                      }
+                      unzip -q master.zip && rm master.zip && mv */* .
+                    } || {
+                      unzip -q main.zip && rm main.zip && mv */* .
+                    }
+                  }
                 }
               }
             }
             
-            # 拉取最新代码
-            git pull origin "$CURRENT_BRANCH" 2>&1 || {
-              echo "警告：无法从$CURRENT_BRANCH分支拉取，尝试从main分支拉取..."
-              git pull origin main 2>&1 || {
-                echo "警告：无法从main分支拉取，尝试从master分支拉取..."
-                git pull origin master 2>&1 || {
-                  echo "致命错误：无法拉取任何分支的代码！"
-                  exit 1
-                }
-              }
-            }
+            cd "$PROJECT_DIR"
+            # 确保我们在正确的目录中
+            echo "当前工作目录："
+            pwd
             
-            # 确认代码已成功拉取
-            echo "拉取后的目录内容："
-            ls -la
-            
-            echo "=== 步骤2 - 已完成 ==="
+            # 确认代码已成功获取
+              echo "获取代码后的目录内容："
+              ls -la
+              
+              # 检查package.json是否存在，确保代码已正确下载
+              if [ ! -f "package.json" ]; then
+                echo "警告：未找到package.json文件，检查代码获取是否完整..."
+                
+                # 如果当前目录下没有package.json，检查是否有子目录
+                subdirs=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name ".")
+                if [ -n "$subdirs" ]; then
+                  echo "发现子目录，尝试将内容移动到当前目录..."
+                  for dir in $subdirs; do
+                    echo "移动 $dir 中的文件..."
+                    mv "$dir"/* . 2>/dev/null || true
+                    rm -rf "$dir"  # 清理空目录
+                  done
+                  
+                  # 再次检查package.json
+                  if [ ! -f "package.json" ]; then
+                    echo "警告：移动文件后仍未找到package.json文件"
+                  else
+                    echo "成功找到package.json文件"
+                  fi
+                fi
+                
+                # 显示最新的目录内容
+                echo "更新后的目录内容："
+                ls -la
+              else
+                echo "成功找到package.json文件，代码获取完成"
+              fi
+              
+              echo "=== 步骤2 - 已完成 ==="
 
       - name: 步骤3 - 安装项目依赖
         uses: appleboy/ssh-action@master
@@ -139,14 +179,29 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             cd "$PROJECT_DIR"
             
-            # 确认package.json文件存在
+            # 再次检查package.json文件，确保可以继续安装依赖
             if [ -f "package.json" ]; then
               echo "找到package.json文件，正在安装依赖..."
               npm install --verbose
             else
-              echo "错误：未找到package.json文件！"
-              exit 1
-            fi
+              echo "警告：未找到package.json文件，尝试再次检查目录结构..."
+              ls -la
+              
+              # 检查是否有其他目录可能包含代码
+              find . -name "package.json" 2>/dev/null || {
+                echo "错误：无法找到package.json文件，依赖安装失败！"
+                echo "请检查代码获取是否成功，或仓库是否包含package.json文件"
+                exit 1
+              }
+              
+              # 如果找到了package.json但不在当前目录，尝试切换到正确的目录
+              pkg_dir=$(find . -name "package.json" -exec dirname {} \; | head -1)
+              if [ "$pkg_dir" != "." ]; then
+                echo "在 $pkg_dir 目录找到package.json，切换到此目录..."
+                cd "$pkg_dir"
+                npm install --verbose
+              fi
+            }
             
             echo "=== 步骤3 - 已完成 ==="
 
