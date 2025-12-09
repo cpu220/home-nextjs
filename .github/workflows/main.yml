@@ -27,39 +27,24 @@ jobs:
             # 项目路径
             PROJECT_DIR="/www/wwwroot/html/home-test"
             
-            # 检查目录是否存在，不存在则创建
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "项目目录不存在，正在创建目录..."
-              mkdir -p "$PROJECT_DIR"
-            else
-              echo "项目目录已存在: $PROJECT_DIR"
-            fi
+            # 检查并创建目录
+            [ ! -d "$PROJECT_DIR" ] && mkdir -p "$PROJECT_DIR"
+            echo "项目目录: $PROJECT_DIR"
             
             # 进入项目目录
             cd "$PROJECT_DIR"
             
-            # 检查.git目录是否存在，不存在则初始化Git仓库
+            # 初始化Git仓库（如果不存在）
             if [ ! -d ".git" ]; then
-              echo ".git目录不存在，正在初始化Git仓库..."
+              echo "初始化Git仓库..."
               git init
-              # 设置Git用户信息
               git config user.name "GitHub Actions"
               git config user.email "actions@github.com"
-              # 添加远程仓库（使用当前工作流所在的仓库URL）
               git remote add origin https://github.com/${{ github.repository }}.git
-              
-              # 配置凭证缓存以避免频繁提示认证
               git config --global credential.helper 'cache --timeout=3600'
-              echo "Git仓库已初始化并添加远程仓库"
             else
-              echo "Git仓库已存在，检查远程配置..."
-              # 检查远程仓库配置是否正确
-              git remote -v
-              # 确保远程仓库配置正确
+              echo "更新远程仓库配置..."
               git remote set-url origin https://github.com/${{ github.repository }}.git
-              
-              # 配置凭证缓存以避免频繁提示认证
-              git config --global credential.helper 'cache --timeout=3600'
             fi
             
             echo "=== 步骤1 - 已完成 ==="
@@ -75,93 +60,58 @@ jobs:
             echo "=== 开始部署步骤2 - 从远程仓库拉取最新代码 ==="
             
             PROJECT_DIR="/www/wwwroot/html/home-test"
-            cd "$PROJECT_DIR"
-            
-            # 获取当前目录内容以确认我们在正确的目录中
-            echo "当前目录内容："
-            ls -la
-            
-            # 获取当前分支名称（使用GitHub Actions上下文）
             CURRENT_BRANCH="${{ github.ref_name }}"
             REPO_URL="https://github.com/${{ github.repository }}.git"
             REPO_NAME="${{ github.repository }}"
+            REPO_SHORT_NAME="${REPO_NAME##*/}"
             
-            echo "当前分支: $CURRENT_BRANCH"
-            echo "仓库URL: $REPO_URL"
-            
-            # 显示远程仓库配置，用于调试
-            echo "远程仓库配置："
-            git remote -v
-            
-            # 尝试直接克隆代码作为备选方案
-            echo "尝试使用git clone直接获取代码..."
-            cd ..
-            rm -rf "$PROJECT_DIR"  # 清空目录以确保干净的克隆
+            # 准备目录
+            cd "$(dirname "$PROJECT_DIR")"
+            rm -rf "$PROJECT_DIR" 
             mkdir -p "$PROJECT_DIR"
             
-            # 尝试使用HTTPS方式克隆，添加超时设置
-            git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
-              echo "HTTPS克隆失败，尝试使用GitHub Actions token..."
-              git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${REPO_NAME}.git" "$PROJECT_DIR" 2>&1 || {
-                echo "使用token克隆失败，尝试克隆main分支..."
-                git clone --depth 1 --single-branch --branch main "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
-                  echo "克隆main分支失败，尝试克隆master分支..."
-                  git clone --depth 1 --single-branch --branch master "$REPO_URL" "$PROJECT_DIR" 2>&1 || {
-                    echo "Git克隆失败，尝试下载源码压缩包作为备选方案..."
-                    
-                    # 使用wget下载源码压缩包作为备选方案
-                    cd "$PROJECT_DIR"
-                    wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/main.zip" -O main.zip || {
-                      echo "下载main分支压缩包失败，尝试master分支..."
-                      wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/master.zip" -O master.zip || {
-                        echo "致命错误：无法获取代码，所有方法均失败！"
-                        exit 1
-                      }
-                      unzip -q master.zip && rm master.zip && mv */* .
-                    } || {
-                unzip -q main.zip && rm main.zip && mv */* .
-              }
+            echo "尝试获取代码..."
+            
+            # 方法1：使用HTTPS克隆当前分支
+            if git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "$REPO_URL" "$PROJECT_DIR"; then
+              echo "✓ 成功：使用HTTPS克隆当前分支"
+            # 方法2：使用GitHub Actions token
+            elif git clone --depth 1 --single-branch --branch "$CURRENT_BRANCH" "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${REPO_NAME}.git" "$PROJECT_DIR"; then
+              echo "✓ 成功：使用GitHub Actions token"
+            # 方法3：克隆main分支
+            elif git clone --depth 1 --single-branch --branch main "$REPO_URL" "$PROJECT_DIR"; then
+              echo "✓ 成功：克隆main分支"
+            # 方法4：克隆master分支
+            elif git clone --depth 1 --single-branch --branch master "$REPO_URL" "$PROJECT_DIR"; then
+              echo "✓ 成功：克隆master分支"
+            # 方法5：下载main分支压缩包
+            elif cd "$PROJECT_DIR" && wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/main.zip" -O main.zip; then
+              echo "✓ 成功：下载main分支压缩包"
+              unzip -q main.zip && rm main.zip
+              [ -d "${REPO_SHORT_NAME}-main" ] && mv "${REPO_SHORT_NAME}-main"/* . && rmdir "${REPO_SHORT_NAME}-main"
+            # 方法6：下载master分支压缩包
+            elif cd "$PROJECT_DIR" && wget -q "https://github.com/${REPO_NAME}/archive/refs/heads/master.zip" -O master.zip; then
+              echo "✓ 成功：下载master分支压缩包"
+              unzip -q master.zip && rm master.zip
+              [ -d "${REPO_SHORT_NAME}-master" ] && mv "${REPO_SHORT_NAME}-master"/* . && rmdir "${REPO_SHORT_NAME}-master"
+            else
+              echo "✗ 错误：无法获取代码！"
+              exit 1
             fi
             
+            # 进入目录并检查内容
             cd "$PROJECT_DIR"
-            # 确保我们在正确的目录中
-            echo "当前工作目录："
-            pwd
-            
-            # 确认代码已成功获取
-            echo "获取代码后的目录内容："
+            echo "目录内容："
             ls -la
             
-            # 检查package.json是否存在，确保代码已正确下载
+            # 调整目录结构（如果需要）
             if [ ! -f "package.json" ]; then
-              echo "警告：未找到package.json文件，检查代码获取是否完整..."
-              
-              # 如果当前目录下没有package.json，检查是否有子目录
-              subdirs=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name ".")
-              if [ -n "$subdirs" ]; then
-                echo "发现子目录，尝试将内容移动到当前目录..."
-                for dir in $subdirs; do
-                  echo "移动 $dir 中的内容..."
-                  mv "$dir"/* . 2>/dev/null || echo "无法移动 $dir 中的内容"
-                  rmdir "$dir" 2>/dev/null || echo "无法删除空目录 $dir"
-                done
-                
-                # 再次检查package.json
-                if [ -f "package.json" ]; then
-                  echo "成功：在移动内容后找到package.json文件"
-                else
-                  echo "仍然未找到package.json文件，但代码获取过程已完成"
-                fi
-              else
-                echo "没有发现相关子目录，但代码获取过程已完成"
-              fi
-              
-              # 显示最新的目录内容
-              echo "更新后的目录内容："
-              ls -la
-            else
-              echo "成功找到package.json文件，代码获取完成"
+              echo "尝试修复目录结构..."
+              subdir=$(find . -maxdepth 1 -type d -not -name "node_modules" -not -name ".git" -not -name "." | head -1)
+              [ -n "$subdir" ] && mv "$subdir"/* . 2>/dev/null && rmdir "$subdir" 2>/dev/null
             fi
+            
+            [ -f "package.json" ] && echo "✓ 找到package.json文件" || echo "! 未找到package.json文件"
             
             echo "=== 步骤2 - 已完成 ==="
 
@@ -178,50 +128,49 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             cd "$PROJECT_DIR"
             
-            # 简化的package.json检查和依赖安装逻辑
-              echo "检查package.json文件..."
-              ls -la
+            echo "检查package.json文件..."
+            ls -la
+            
+            # 确定使用的包管理器
+            USE_NPM=false
+            if ! command -v pnpm &> /dev/null; then
+              echo "pnpm不可用，尝试安装..."
+              npm install -g pnpm 2>/dev/null || {
+                echo "✓ 使用npm安装依赖"
+                USE_NPM=true
+              }
+            fi
+            [ "$USE_NPM" = false ] && echo "✓ 使用pnpm安装依赖"
+            
+            # 查找package.json位置
+            if [ ! -f "package.json" ]; then
+              echo "当前目录未找到package.json，正在查找..."
+              PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
               
-              # 安装pnpm（如果未安装）
-              if ! command -v pnpm &> /dev/null; then
-                echo "pnpm未安装，尝试安装pnpm..."
-                npm install -g pnpm || {
-                  echo "安装pnpm失败，回退到npm..."
-                  USE_NPM=true
-                }
+              if [ -z "$PKG_PATH" ]; then
+                echo "✗ 错误：无法找到package.json文件！"
+                exit 1
               fi
               
-              # 检查当前目录是否有package.json
-              if [ -f "package.json" ]; then
-                echo "找到package.json文件，正在安装依赖..."
-                if [ "$USE_NPM" = true ]; then
-                  npm install --verbose
-                else
-                  pnpm install --verbose
-                fi
-              else
-                echo "当前目录未找到package.json，尝试查找它的位置..."
-                
-                # 使用简单的命令查找package.json
-                PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
-                
-                if [ -z "$PKG_PATH" ]; then
-                  echo "错误：无法找到package.json文件！"
-                  echo "代码获取可能不完整，请检查仓库内容。"
-                  exit 1
-                else
-                  echo "在 $PKG_PATH 找到package.json文件"
-                  PKG_DIR=$(dirname "$PKG_PATH")
-                  echo "切换到目录: $PKG_DIR"
-                  cd "$PKG_DIR"
-                  echo "正在安装依赖..."
-                  if [ "$USE_NPM" = true ]; then
-                    npm install --verbose
-                  else
-                    pnpm install --verbose
-                  fi
-                fi
-              fi
+              cd "$(dirname "$PKG_PATH")"
+              echo "✓ 在 $(pwd) 目录找到package.json"
+            fi
+            
+            # 安装依赖
+            echo "开始安装依赖..."
+            if [ "$USE_NPM" = true ]; then
+              npm install --verbose
+            else
+              pnpm install --verbose
+            fi
+            
+            # 验证安装结果
+            if [ $? -eq 0 ]; then
+              echo "✓ 依赖安装成功"
+            else
+              echo "✗ 依赖安装失败"
+              exit 1
+            fi
             
             echo "=== 步骤3 - 已完成 ==="
 
@@ -238,42 +187,43 @@ jobs:
             PROJECT_DIR="/www/wwwroot/html/home-test"
             cd "$PROJECT_DIR"
             
-            # 检查是否存在package.json文件并设置构建命令
-            if [ -f "package.json" ]; then
-              # 检查pnpm是否可用
-              if command -v pnpm &> /dev/null; then
-                echo "正在使用pnpm构建项目..."
-                pnpm run build --verbose || {
-                  echo "pnpm构建失败，尝试使用npm构建..."
-                  npm run build --verbose
-                }
-              else
-                echo "pnpm不可用，使用npm构建项目..."
-                npm run build --verbose
-              fi
+            # 查找并切换到包含package.json的目录
+            if [ ! -f "package.json" ]; then
+              echo "当前目录未找到package.json，正在查找..."
+              PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
               
-              # 检查构建结果
-              if [ $? -eq 0 ]; then
-                echo "项目构建成功！"
-              else
-                echo "错误：项目构建失败！"
+              if [ -z "$PKG_PATH" ]; then
+                echo "✗ 错误：无法找到package.json文件！"
                 exit 1
               fi
-            else
-              echo "警告：未找到package.json文件，无法执行构建命令"
-              # 尝试查找package.json位置
-              PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
-              if [ -n "$PKG_PATH" ]; then
-                PKG_DIR=$(dirname "$PKG_PATH")
-                echo "发现package.json在 $PKG_DIR 目录，切换目录重新构建..."
-                cd "$PKG_DIR"
-                if command -v pnpm &> /dev/null; then
-                  pnpm run build --verbose
-                else
-                  npm run build --verbose
-                fi
+              
+              cd "$(dirname "$PKG_PATH")"
+              echo "✓ 在 $(pwd) 目录找到package.json"
+            fi
+            
+            # 执行构建
+            echo "开始构建项目..."
+            
+            # 优先使用pnpm，如果失败则回退到npm
+            if command -v pnpm &> /dev/null; then
+              echo "使用pnpm构建..."
+              if pnpm run build --verbose; then
+                echo "✓ pnpm构建成功"
               else
-                echo "致命错误：无法找到package.json文件，无法完成构建！"
+                echo "尝试使用npm构建..."
+                if npm run build --verbose; then
+                  echo "✓ npm构建成功"
+                else
+                  echo "✗ 构建失败！"
+                  exit 1
+                fi
+              fi
+            else
+              echo "使用npm构建..."
+              if npm run build --verbose; then
+                echo "✓ npm构建成功"
+              else
+                echo "✗ 构建失败！"
                 exit 1
               fi
             fi
