@@ -1,0 +1,48 @@
+# 简单的Next.js Dockerfile - 使用npm作为包管理器
+
+# 构建阶段
+FROM node:18.20.4-alpine3.20 AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制package.json和package-lock.json
+COPY package.json package-lock.json* ./
+
+# 安装依赖
+RUN npm ci
+
+# 复制项目文件
+COPY . .
+
+# 构建项目
+RUN npm run build
+
+# 运行阶段
+FROM node:18.20.4-alpine3.20 AS runner
+
+# 设置环境变量
+ENV NODE_ENV production
+ENV PORT 3001
+
+# 创建非root用户
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制构建产物
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# 复制data目录，确保portfolio.json等数据文件被包含
+COPY --from=builder --chown=nextjs:nodejs /app/data ./data
+
+# 切换到非root用户
+USER nextjs
+
+# 暴露端口
+EXPOSE 3001
+
+# 启动应用
+CMD ["node", "server.js"]

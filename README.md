@@ -77,7 +77,7 @@ yarn dev
 pnpm dev
 ```
 
-开发服务器启动后，打开浏览器访问 [http://localhost:3000](http://localhost:3000)
+开发服务器启动后，打开浏览器访问 [http://localhost:3001](http://localhost:3001)
 
 ### 3. 开发说明
 
@@ -110,7 +110,7 @@ yarn start
 pnpm start
 ```
 
-生产服务器会在 [http://localhost:3000](http://localhost:3000) 启动。
+生产服务器会在 [http://localhost:3001](http://localhost:3001) 启动。
 
 ## 如何部署
 
@@ -121,45 +121,17 @@ pnpm start
 3. 导入你的 Git 仓库
 4. Vercel 会自动检测 Next.js 项目并完成部署
 
-### 其他平台部署
+### Docker 部署
 
-#### Docker 部署
+项目提供了多个 Docker 构建脚本，支持不同的部署场景：
 
-创建 `Dockerfile`:
+- `build-local-image.sh` - 本地快速构建脚本
+- `build-multiplatform-image.sh` - 多平台构建脚本
+- `scripts/simple/` - 简化版构建部署脚本
 
-```dockerfile
-FROM node:18-alpine AS base
+详细的 Docker 部署说明请查看：[doc/docker-deployment-guide.md](./doc/docker-deployment-guide.md)
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV production
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-USER nextjs
-EXPOSE 3000
-ENV PORT 3000
-CMD ["node", "server.js"]
-```
-
-#### 静态导出（可选）
+### 静态导出（可选）
 
 如果需要静态导出，可以在 `next.config.js` 中添加：
 
@@ -208,7 +180,7 @@ npm run build
 - `tags`: 项目标签数组（可选）
 - `category`: 项目分类（可选）
 
-## SSR 说明
+## 渲染模式说明
 
 本项目使用 Next.js App Router 的 Server Components，**当前已启用 SSR（服务端渲染）**：
 
@@ -217,21 +189,7 @@ npm run build
 - 首次页面加载时，HTML 已经在服务端生成，提升 SEO 和首屏加载速度
 - 使用 `export const dynamic = 'force-dynamic'` 强制 SSR 模式
 
-### 如何切换渲染模式？
-
-📖 **详细说明请查看：[RENDERING_MODES.md](./RENDERING_MODES.md)**
-
-**快速切换：**
-
-1. **关闭 SSR，使用 SSG（静态生成）**：
-   - 在 `app/page.tsx` 中，将 `export const dynamic = 'force-dynamic'` 改为 `export const dynamic = 'force-static'`
-
-2. **使用 CSR（客户端渲染）**：
-   - 在 `app/page.tsx` 文件顶部添加 `'use client'`
-   - 参考示例文件：`app/page.csr.example.tsx`
-
-3. **保持 SSR（当前模式）**：
-   - 保持 `export const dynamic = 'force-dynamic'` 即可
+详细的渲染模式切换说明请查看：[RENDERING_MODES.md](./RENDERING_MODES.md)
 
 ## 路由系统
 
@@ -245,24 +203,8 @@ npm run build
 | `/projects` | `app/projects/page.tsx` | 项目列表页面 |
 | `/projects/:id` | `app/projects/[id]/page.tsx` | 项目详情（动态路由） |
 
-**详细路由说明：** 📖 查看 [ROUTING_GUIDE.md](./ROUTING_GUIDE.md)
-
-### 路由特点
-
-- **静态路由**：`/about`、`/contact` 等固定路径
-- **动态路由**：`/projects/[id]` 支持动态参数
-- **嵌套布局**：所有页面共享根布局和导航
-- **404 处理**：项目不存在时显示自定义 404 页面
-
-## 学习资源
-
-- [Next.js 官方文档](https://nextjs.org/docs)
-- [App Router 文档](https://nextjs.org/docs/app)
-- [路由文档](https://nextjs.org/docs/app/building-your-application/routing)
-- [React Server Components](https://react.dev/blog/2023/03/22/react-labs-what-we-have-been-working-on-march-2023#react-server-components)
-- [Tailwind CSS 文档](https://tailwindcss.com/docs)
+详细的路由系统说明请查看：[ROUTING_GUIDE.md](./ROUTING_GUIDE.md)
 
 ## 许可证
 
 MIT
-

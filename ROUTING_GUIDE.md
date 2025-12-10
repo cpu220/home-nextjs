@@ -47,7 +47,7 @@ export default function AboutPage() {
 }
 ```
 
-访问方式：`http://localhost:3000/about`
+访问方式：`http://localhost:3001/about`
 
 ### 2. 动态路由
 
@@ -63,9 +63,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 ```
 
 访问方式：
-- `http://localhost:3000/projects/1`
-- `http://localhost:3000/projects/2`
-- `http://localhost:3000/projects/abc`
+- `http://localhost:3001/projects/1`
+- `http://localhost:3001/projects/2`
+- `http://localhost:3001/projects/abc`
 
 ### 3. 捕获所有路由（可选）
 
@@ -349,13 +349,13 @@ app/
 
 启动开发服务器后，访问以下 URL：
 
-- `http://localhost:3000/` - 首页
-- `http://localhost:3000/about` - 关于页面
-- `http://localhost:3000/contact` - 联系方式
-- `http://localhost:3000/projects` - 项目列表
-- `http://localhost:3000/projects/1` - 项目 1 详情
-- `http://localhost:3000/projects/2` - 项目 2 详情
-- `http://localhost:3000/projects/999` - 404 页面（项目不存在）
+- `http://localhost:3001/` - 首页
+- `http://localhost:3001/about` - 关于页面
+- `http://localhost:3001/contact` - 联系方式
+- `http://localhost:3001/projects` - 项目列表
+- `http://localhost:3001/projects/1` - 项目 1 详情
+- `http://localhost:3001/projects/2` - 项目 2 详情
+- `http://localhost:3001/projects/999` - 404 页面（项目不存在）
 
 ## 更多资源
 

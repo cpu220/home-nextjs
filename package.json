@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "d":"npm install && npm run build && npm run dev",
-    "bd":"next build && next start", 
+    "d": "npm install && npm run build && npm run dev",
+    "bd": "next build && next start",
     "dev": "node start.js",
     "build": "next build",
     "start": "node start.js",
     "start:prod": "next start -p ${PORT:-3001}",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:build": "bash scripts/simple/build.sh",
+    "docker:deploy": "bash scripts/simple/deploy.sh",
+    "docker:all": "bash scripts/simple/index.sh"
   },
   "dependencies": {
     "next": "^14.2.0",
