@@ -70,6 +70,14 @@
     "url": "https://vercel.com",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
+  },
+  {
+    "id": "10",
+    "title": "示例项目 10",
+    "description": "展示响应式设计和现代化 UI 的示例",
+    "url": "https://vercel.com",
+    "tags": ["React", "Tailwind CSS"],
+    "category": "UI/UX"
   }
 ]
 
