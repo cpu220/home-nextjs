@@ -22,9 +22,10 @@ export default function Home() {
           <h1 className="text-5xl font-bold mb-4 text-gray-900 dark:text-white">
             我的作品集
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <div className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             欢迎来到我的个人作品展示页面，这里汇集了我的一些项目作品
-          </p>
+          </div>
+          <div>测试页面部署</div>
         </header>
 
         {/* 作品网格 */}
