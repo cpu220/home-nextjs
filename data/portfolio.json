@@ -10,7 +10,7 @@
   {
     "id": "2",
     "title": "示例项目 2",
-    "description": "另一个示例项目，用于演示作品卡片的展示效果, vervel部署",
+    "description": "另一个示例项目，用于演示作品卡片的展示效果, Vercel部署",
     "url": "https://nextjs.org",
     "tags": ["Next.js", "SSR"],
     "category": "Web 开发"
