@@ -18,7 +18,7 @@
   {
     "id": "3",
     "title": "示例项目 3",
-    "description": "展示响应式设计和现代化 UI 的示例",
+    "description": "展示响应式设计和现代化 UI 的示例，测试自动化构建部署",
     "url": "https://vercel.com",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
