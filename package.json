@@ -2,8 +2,9 @@
   "name": "personal-portfolio",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "d": "npm install && npm run build && npm run dev",
+    "d": "pnpm install && pnpm run build && pnpm run dev",
     "bd": "next build && next start",
     "dev": "node scripts/start.js",
     "build": "next build",
@@ -15,9 +16,9 @@
     "docker:all": "bash deploy/simple/index.sh"
   },
   "dependencies": {
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "next": "^16.0.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -25,8 +26,8 @@
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.17",
     "dotenv": "^17.2.3",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.0",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.0.10",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"

@@ -1,10 +1,10 @@
 # 个人作品集网站
 
-这是一个基于 Next.js 14 构建的个人作品展示网站，使用 SSR (Server-Side Rendering) 技术，展示个人作品项目。
+这是一个基于 Next.js 16 构建的个人作品展示网站，使用 SSR (Server-Side Rendering) 技术，展示个人作品项目。
 
 ## 技术栈
 
-- **Next.js 14** - React 框架，支持 SSR/SSG
+- **Next.js 16** - React 框架，支持 SSR/SSG
 - **TypeScript** - 类型安全
 - **Tailwind CSS** - 实用优先的 CSS 框架
 - **App Router** - Next.js 13+ 的新路由系统

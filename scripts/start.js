@@ -11,7 +11,7 @@ console.log(`Starting Next.js server on port ${port}...`);
 
 // 启动Next.js开发服务器
 const nextProcess = spawn(
-  path.resolve(__dirname, 'node_modules/.bin/next'),
+  'next', // 直接使用next命令，会自动在PATH中查找
   ['dev', '-p', port],
   {
     stdio: 'inherit',

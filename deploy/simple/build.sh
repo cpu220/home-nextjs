@@ -72,6 +72,8 @@ if [ "$TAG_TYPE" = "versioned" ]; then
     --tag="$IMAGE_NAME:$TAG" \
     --tag="$IMAGE_NAME:$VERSION_TAG" \
     --progress=plain \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --network=host \
     -f Dockerfile-simple \
     .
   echo "镜像构建完成，标签: $IMAGE_NAME:$TAG 和 $IMAGE_NAME:$VERSION_TAG"
@@ -81,6 +83,8 @@ else
     --platform="$PLATFORM" \
     --tag="$IMAGE_NAME:$TAG" \
     --progress=plain \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --network=host \
     -f Dockerfile-simple \
     .
   echo "镜像构建完成，标签: $IMAGE_NAME:$TAG"
