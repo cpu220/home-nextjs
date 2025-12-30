@@ -1,9 +1,9 @@
 [
   {
     "id": "1",
-    "title": "示例项目 1",
+    "title": "示例项目 01",
     "description": "这是一个示例项目，展示了如何使用 Next.js 16 构建 SSR 应用",
-    "url": "https://github.com",
+    "url": "",
     "tags": ["Next.js", "React", "TypeScript"],
     "category": "Web 开发"
   },
@@ -11,7 +11,7 @@
     "id": "2",
     "title": "示例项目 2",
     "description": "另一个示例项目，用于演示作品卡片的展示效果, Vercel部署",
-    "url": "https://nextjs.org",
+    "url": "",
     "tags": ["Next.js", "SSR"],
     "category": "Web 开发"
   },
@@ -19,15 +19,15 @@
     "id": "3",
     "title": "示例项目 3",
     "description": "展示响应式设计和现代化 UI 的示例，测试自动化构建部署",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
   {
     "id": "4",
     "title": "示例项目 4",
-    "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "description": "目前项目都是空，不可点击",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -35,7 +35,7 @@
     "id": "5",
     "title": "示例项目 5",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -43,7 +43,7 @@
     "id": "6",
     "title": "示例项目 6",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -51,7 +51,7 @@
     "id": "7",
     "title": "示例项目 7",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -59,7 +59,7 @@
     "id": "8",
     "title": "示例项目 8",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -67,7 +67,7 @@
     "id": "9",
     "title": "示例项目 9",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },
@@ -75,14 +75,14 @@
     "id": "10",
     "title": "示例项目 10",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   },{
     "id": "11",
     "title": "示例项目 11",
     "description": "展示响应式设计和现代化 UI 的示例",
-    "url": "https://vercel.com",
+    "url": "",
     "tags": ["React", "Tailwind CSS"],
     "category": "UI/UX"
   }

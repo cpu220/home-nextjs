@@ -17,7 +17,7 @@
     "deploy": "curl -X POST https://api.vercel.com/v1/integrations/deploy/prj_LzXsj6LQfxoyCBzyMNm5V9CNL2xF/5lX7ScxrNd"
   },
   "dependencies": {
-    "next": "^16.0.10",
+    "next": "^16.0.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -28,7 +28,7 @@
     "autoprefixer": "^10.4.17",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
-    "eslint-config-next": "^16.0.10",
+    "eslint-config-next": "^16.0.11",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
