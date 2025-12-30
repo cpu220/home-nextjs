@@ -114,20 +114,75 @@ pnpm start
 
 ## 如何部署
 
+### 部署指令说明
+
+项目提供了多种部署方式，通过 `package.json` 中的脚本可以快速执行不同的部署流程：
+
+| 指令 | 命令 | 描述 |
+|------|------|------|
+| `deploy` | `npm run deploy` | 触发 Vercel 自动部署，通过 Webhook 直接推送最新代码到 Vercel 生产环境 |
+| `docker:build` | `npm run docker:build` | 执行 Docker 镜像构建脚本（生产环境，默认使用时间戳版本标签） |
+| `docker:deploy` | `npm run docker:deploy` | 将构建好的 Docker 镜像推送到腾讯云仓库 |
+| `docker:all` | `npm run docker:all` | 依次执行构建和部署脚本，完成完整的 Docker 部署流程（生产环境） |
+| `docker:dev:build` | `npm run docker:dev:build` | 执行 Docker 镜像构建脚本（开发环境，默认使用latest标签） |
+| `docker:dev:deploy` | `npm run docker:dev:deploy` | 将构建好的 Docker 镜像推送到腾讯云仓库（配合开发环境构建使用） |
+| `docker:dev:all` | `npm run docker:dev:all` | 依次执行构建和部署脚本，完成完整的 Docker 部署流程（开发环境） |
+
 ### Vercel 部署（推荐）
 
+**方式一：通过 Git 自动部署**
 1. 将代码推送到 GitHub/GitLab/Bitbucket
 2. 访问 [Vercel](https://vercel.com)
 3. 导入你的 Git 仓库
 4. Vercel 会自动检测 Next.js 项目并完成部署
 
+**方式二：使用命令行快速部署**
+```bash
+npm run deploy
+# 或
+pnpm run deploy
+```
+
+此命令会通过 Vercel Webhook 直接触发部署，无需登录 Vercel 控制台，适合快速更新生产环境。
+
 ### Docker 部署
 
-项目提供了多个 Docker 构建脚本，支持不同的部署场景：
+项目提供了完整的 Docker 部署脚本，支持构建和部署到腾讯云容器服务：
 
-- `build-local-image.sh` - 本地快速构建脚本
-- `build-multiplatform-image.sh` - 多平台构建脚本
-- `scripts/simple/` - 简化版构建部署脚本
+#### 快速开始
+
+**完整部署流程（推荐）**：
+```bash
+npm run docker:all
+# 或使用latest标签（不推荐用于生产环境）
+npm run docker:all -- --latest
+```
+
+**分步部署**：
+
+1. **构建镜像**：
+   ```bash
+   npm run docker:build
+   # 或使用latest标签（不推荐用于生产环境）
+npm run docker:build -- --latest
+   ```
+   
+   支持两种标签模式：
+   - 默认：使用时间戳版本标签（`vYYYYMMDD-HHMMSS` 格式）
+   - 传统：添加 `--latest` 参数，使用 `latest` 标签（不推荐用于生产环境）
+
+2. **部署镜像**：
+   ```bash
+   npm run docker:deploy
+   ```
+   
+   此命令会将构建好的镜像推送到腾讯云仓库，自动处理版本化标签的推送。
+
+#### 脚本说明
+
+- `deploy/simple/build.sh` - Docker 镜像构建脚本，支持多平台和版本化标签
+- `deploy/simple/deploy.sh` - Docker 镜像部署脚本，将镜像推送到腾讯云仓库
+- `deploy/simple/index.sh` - 总控脚本，依次执行构建和部署操作
 
 详细的 Docker 部署说明请查看：[doc/docker-deployment-guide.md](./doc/docker-deployment-guide.md)
 

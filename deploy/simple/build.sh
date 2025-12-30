@@ -13,22 +13,22 @@ set -e
 IMAGE_NAME="home-nextjs"
 # 默认使用latest标签
 TAG="latest"
-# 定义标签类型变量
-TAG_TYPE="latest"
+# 定义标签类型变量，默认使用versioned
+TAG_TYPE="versioned"
 
 # 解析命令行参数
-# 可选参数: --versioned 或 -v 使用自增版本号
+# 可选参数: --latest 或 -l 使用latest标签（不推荐用于生产环境）
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --versioned|-v)
-      TAG_TYPE="versioned"
+    --latest|-l)
+      TAG_TYPE="latest"
       shift # 移除参数名
       ;;
     *)
       echo "未知参数: $1"
-      echo "用法: $0 [--versioned|-v]"
-      echo "  --versioned|-v: 使用自增版本号而非默认的latest标签"
-      exit 1
+    echo "用法: $0 [--latest|-l]"
+    echo "  --latest|-l: 使用latest标签（默认使用时间戳版本标签）"
+    exit 1
       ;;
   esac
 done
@@ -40,7 +40,7 @@ if [ "$TAG_TYPE" = "versioned" ]; then
   VERSION_TAG="v$TIMESTAMP"
   echo "使用时间戳版本标签: $VERSION_TAG"
 else
-  echo "使用默认latest标签"
+  echo "使用latest标签（不推荐用于生产环境）"
 fi
 
 # 定义平台 - 云服务器使用linux/amd64
@@ -56,9 +56,10 @@ cd "$ROOT_DIR"
 echo "===== 开始构建Docker镜像 ====="
 echo "镜像名称: $IMAGE_NAME"
 echo "标签类型: $TAG_TYPE"
-echo "标签: $TAG"
 if [ "$TAG_TYPE" = "versioned" ]; then
   echo "版本标签: $VERSION_TAG"
+else
+  echo "标签: $TAG"
 fi
 echo "构建平台: $PLATFORM"
 echo "使用Dockerfile: Dockerfile-simple"
@@ -66,19 +67,18 @@ echo "==========================="
 
 # 根据标签类型构建镜像
 if [ "$TAG_TYPE" = "versioned" ]; then
-  # 使用版本化标签，同时保留latest标签作为兼容性
+  # 仅使用版本化标签，不生成latest标签（生产环境）
   docker build \
     --platform="$PLATFORM" \
-    --tag="$IMAGE_NAME:$TAG" \
     --tag="$IMAGE_NAME:$VERSION_TAG" \
     --progress=plain \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --network=host \
     -f Dockerfile-simple \
     .
-  echo "镜像构建完成，标签: $IMAGE_NAME:$TAG 和 $IMAGE_NAME:$VERSION_TAG"
+  echo "镜像构建完成，标签: $IMAGE_NAME:$VERSION_TAG"
 else
-  # 只使用latest标签
+  # 只使用latest标签（不推荐用于生产环境）
   docker build \
     --platform="$PLATFORM" \
     --tag="$IMAGE_NAME:$TAG" \
@@ -93,12 +93,20 @@ fi
 echo ""
 echo "✅ 镜像构建成功!"
 echo ""
-echo "构建镜像: $IMAGE_NAME:$TAG"
-echo "构建镜像: $IMAGE_NAME:$VERSION_TAG"
+if [ "$TAG_TYPE" = "versioned" ]; then
+  echo "构建镜像: $IMAGE_NAME:$VERSION_TAG"
+else
+  echo "构建镜像: $IMAGE_NAME:$TAG"
+fi
+
 echo ""
 
 # 获取构建的镜像ID
-IMAGE_ID=$(docker images -q "$IMAGE_NAME:$TAG")
+if [ "$TAG_TYPE" = "versioned" ]; then
+  IMAGE_ID=$(docker images -q "$IMAGE_NAME:$VERSION_TAG")
+else
+  IMAGE_ID=$(docker images -q "$IMAGE_NAME:$TAG")
+fi
 
 # 统一使用image_info.txt文件保存镜像信息
 IMAGE_INFO_FILE="$(dirname "${BASH_SOURCE[0]}")/image_info.txt"

@@ -9,7 +9,7 @@
   },
   {
     "id": "2",
-    "title": "示例项目 2",
+    "title": "示例项目 02",
     "description": "另一个示例项目，用于演示作品卡片的展示效果, Vercel部署",
     "url": "",
     "tags": ["Next.js", "SSR"],

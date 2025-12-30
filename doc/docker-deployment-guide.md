@@ -15,7 +15,7 @@
 
 项目提供了两套构建脚本：
 
-### 1. 简化版脚本（scripts/simple 目录）
+### 1. 简化版脚本（deploy/simple 目录）
 
 适合日常使用和快速部署，专注于基本功能，支持标签控制：
 
@@ -38,10 +38,15 @@
 
 #### 脚本参数说明
 
-- `--versioned` 或 `-v` - 使用时间戳版本化标签
-  - 格式为 vYYYYMMDD-HHMMSS（例如：v20231210-183000）
-  - 同时保留 latest 标签作为兼容性
-  - 适合生产环境版本控制和回滚
+- `--latest` 或 `-l` - 使用latest标签（不推荐用于生产环境）
+  - 仅使用 latest 标签
+  - 不生成版本化标签
+  - 主要用于开发测试环境
+
+默认行为：使用时间戳版本化标签
+- 格式为 vYYYYMMDD-HHMMSS（例如：v20231210-183000）
+- 同时保留 latest 标签作为兼容性
+- 适合生产环境版本控制和回滚
 
 ### 2. 高级构建脚本（根目录）
 
@@ -63,19 +68,19 @@
 
 ```bash
 # 使用总控脚本一键完成构建和部署
-./scripts/simple/index.sh
+./deploy/simple/index.sh
 
 # 或单独使用构建脚本
-./scripts/simple/build.sh
+./deploy/simple/build.sh
 ```
 
 标签模式选择：
 ```bash
-# 开发环境：使用默认 latest 标签
-./scripts/simple/build.sh
+# 生产环境（默认）：使用时间戳版本标签
+./deploy/simple/build.sh
 
-# 生产环境：使用时间戳版本标签
-./scripts/simple/build.sh --versioned
+# 开发环境：使用latest标签（不推荐用于生产环境）
+./deploy/simple/build.sh --latest
 ```
 
 ### 使用高级脚本
@@ -103,7 +108,7 @@ docker inspect home-nextjs:latest
 
 # 如果使用简化脚本，还可以查看
 echo "===== 镜像信息 ====="
-cat scripts/simple/image_info.txt
+cat deploy/simple/image_info.txt
 ```
 
 ### 本地验证容器
@@ -139,8 +144,11 @@ docker run -d \
 #### 使用简化脚本部署（推荐）
 
 ```bash
-# 一键构建并部署
-./scripts/simple/index.sh --versioned  # 推荐生产环境使用版本化标签
+# 一键构建并部署（默认使用版本化标签，推荐生产环境）
+./deploy/simple/index.sh
+
+# 一键构建并部署（使用latest标签，不推荐用于生产环境）
+./deploy/simple/index.sh --latest
 ```
 
 #### 手动部署到腾讯云
@@ -189,7 +197,7 @@ docker run -d \
 
 1. **使用版本化标签**：
    ```bash
-   ./scripts/simple/index.sh --versioned
+   ./deploy/simple/index.sh --versioned
    ```
    这样便于回滚和版本控制。
 
@@ -234,7 +242,7 @@ docker run -d \
 
 1. **权限问题**：确保脚本有执行权限
    ```bash
-   chmod +x scripts/simple/*.sh
+   chmod +x deploy/simple/*.sh
    ```
 
 2. **腾讯云登录**：部署前确保已登录腾讯云镜像仓库
@@ -261,7 +269,7 @@ docker run -d \
 ### Q: 如何选择合适的构建脚本？
 
 **A**: 
-- 日常开发和部署：使用 `scripts/simple` 目录下的脚本
+- 日常开发和部署：使用 `deploy/simple` 目录下的脚本
 - 多平台部署或特殊网络环境：使用根目录的高级脚本
 
 ### Q: 版本化标签有什么好处？

@@ -16,16 +16,17 @@ IMAGE_INFO_FILE="$SCRIPT_DIR/image_info.txt"
 TAG_PARAMS=""
 
 # 解析命令行参数
+# 可选参数: --latest|-l 使用latest标签（默认使用版本化标签）
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --versioned|-v)
-      TAG_PARAMS="--versioned"
+    --latest|-l)
+      TAG_PARAMS="--latest"
       shift # 移除参数名
       ;;
     *)
       echo "未知参数: $1"
-    echo "用法: $0 [--versioned|-v]"
-    echo "  --versioned|-v: 使用自增版本号而非默认的latest标签"
+    echo "用法: $0 [--latest|-l]"
+    echo "  --latest|-l: 使用latest标签（默认使用时间戳版本标签）"
     exit 1
       ;;
   esac
@@ -39,9 +40,9 @@ fi
 
 echo "🔄 开始Docker镜像构建和部署流程..."
 if [ -n "$TAG_PARAMS" ]; then
-  echo "使用版本化标签模式（v+时间戳格式）"
+  echo "使用latest标签模式（不推荐用于生产环境）"
 else
-  echo "使用默认标签模式"
+  echo "使用版本化标签模式（v+时间戳格式）"
 fi
 echo ""
 

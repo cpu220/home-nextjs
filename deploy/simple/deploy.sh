@@ -55,29 +55,48 @@ if [ "$TAG_TYPE" = "versioned" ] && [ -z "$VERSION_TAG" ]; then
 fi
 
 echo "===== 开始部署Docker镜像 ====="
-echo "本地镜像: $IMAGE_NAME:$TAG"
 echo "标签类型: $TAG_TYPE"
 if [ "$TAG_TYPE" = "versioned" ]; then
+  echo "本地镜像: $IMAGE_NAME:$VERSION_TAG"
   echo "版本标签: $IMAGE_NAME:$VERSION_TAG"
+else
+  echo "本地镜像: $IMAGE_NAME:$TAG"
 fi
 echo "腾讯云仓库: $REGISTRY_IMAGE"
 echo "==========================="
 
 # 标记镜像为腾讯云仓库格式
 echo "正在标记镜像..."
-echo "执行命令: docker tag $IMAGE_ID $REGISTRY_IMAGE:$TAG"
-docker tag "$IMAGE_ID" "$REGISTRY_IMAGE:$TAG"
 
-# 有条件地标记版本标签
+# 根据标签类型标记镜像
 if [ "$TAG_TYPE" = "versioned" ]; then
+  # 生产环境：只标记版本化标签
   echo "执行命令: docker tag $IMAGE_ID $REGISTRY_IMAGE:$VERSION_TAG"
   docker tag "$IMAGE_ID" "$REGISTRY_IMAGE:$VERSION_TAG"
   echo "已标记版本标签: $REGISTRY_IMAGE:$VERSION_TAG"
+else
+  # 开发环境：标记为latest标签
+  echo "执行命令: docker tag $IMAGE_ID $REGISTRY_IMAGE:$TAG"
+  docker tag "$IMAGE_ID" "$REGISTRY_IMAGE:$TAG"
 fi
 
 # 继续执行推送流程
 
 # 直接尝试推送镜像，而不是先检查登录状态
+if [ "$TAG_TYPE" = "versioned" ]; then
+  # 生产环境：只推送版本化标签
+  echo "正在推送版本标签镜像到腾讯云仓库..."
+  echo "执行命令: docker push $REGISTRY_IMAGE:$VERSION_TAG"
+  # 尝试推送镜像，如果失败再提示登录
+  if ! docker push "$REGISTRY_IMAGE:$VERSION_TAG"; then
+    echo "🔔 推送失败，可能是未登录腾讯云仓库"
+    echo "请先登录：docker login $REGISTRY_DOMAIN"
+    exit 1
+  fi
+  
+  echo "✅ 版本化镜像推送成功: $REGISTRY_IMAGE:$VERSION_TAG"
+else
+  # 开发环境：只推送latest标签
   echo "正在推送镜像到腾讯云仓库..."
   echo "执行命令: docker push $REGISTRY_IMAGE:$TAG"
   # 尝试推送镜像，如果失败再提示登录
@@ -88,25 +107,16 @@ fi
   fi
   
   echo "✅ 镜像推送成功: $REGISTRY_IMAGE:$TAG"
-
-# 推送逻辑已移到上方
-
-# 有条件地推送版本标签
-if [ "$TAG_TYPE" = "versioned" ]; then
-  echo "正在推送版本标签镜像..."
-  echo "执行命令: docker push $REGISTRY_IMAGE:$VERSION_TAG"
-  docker push "$REGISTRY_IMAGE:$VERSION_TAG"
-  echo "✅ 版本化镜像推送成功: $REGISTRY_IMAGE:$VERSION_TAG"
 fi
 
 echo ""
 echo "✅ 镜像部署成功!"
-echo "推送的镜像: $REGISTRY_IMAGE:$TAG"
 if [ "$TAG_TYPE" = "versioned" ]; then
-  echo "版本镜像已推送到: $REGISTRY_IMAGE:$VERSION_TAG"
+  echo "推送的镜像: $REGISTRY_IMAGE:$VERSION_TAG"
   echo ""
   echo "提示: 您可以在腾讯云容器服务中指定使用特定版本标签进行部署，而不仅仅依赖latest标签"
 else
+  echo "推送的镜像: $REGISTRY_IMAGE:$TAG"
   echo ""
   echo "提示: 请在腾讯云容器服务中更新容器配置，注意可能需要强制拉取最新镜像。"
 fi
