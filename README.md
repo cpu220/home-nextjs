@@ -67,7 +67,25 @@ yarn install
 pnpm install
 ```
 
-### 2. 启动开发服务器
+### 2. 创建环境配置文件
+
+项目使用 `.env` 文件管理环境变量，该文件不应提交到仓库。请在项目根目录创建 `.env` 文件，并根据需要配置以下变量：
+
+```bash
+# 应用运行的端口号
+PORT=3001
+
+# Docker镜像仓库的域名（仅Docker部署时需要）
+REGISTRY_DOMAIN=ccr.ccs.tencentyun.com
+
+# Docker镜像仓库中的命名空间（仅Docker部署时需要）
+NAMESPACE=cc-docker-test
+
+# Docker镜像在仓库中的名称（仅Docker部署时需要）
+REGISTRY_IMAGE_NAME=cc-docker-test-name
+```
+
+### 3. 启动开发服务器
 
 ```bash
 npm run dev
@@ -79,7 +97,7 @@ pnpm dev
 
 开发服务器启动后，打开浏览器访问 [http://localhost:3001](http://localhost:3001)
 
-### 3. 开发说明
+### 4. 开发说明
 
 - 修改 `data/portfolio.json` 文件来添加/编辑作品
 - 修改 `app/page.tsx` 来调整页面布局
@@ -148,6 +166,23 @@ pnpm run deploy
 ### Docker 部署
 
 项目提供了完整的 Docker 部署脚本，支持构建和部署到腾讯云容器服务：
+
+#### 配置要求
+
+在进行 Docker 部署前，请确保已在 `.env` 文件中正确配置以下变量：
+
+```bash
+# Docker镜像仓库的域名
+REGISTRY_DOMAIN=ccr.ccs.tencentyun.com
+
+# Docker镜像仓库中的命名空间
+NAMESPACE=cc-docker-test
+
+# Docker镜像在仓库中的名称
+REGISTRY_IMAGE_NAME=cc-docker-test-name
+```
+
+这些变量将用于构建镜像的完整仓库路径。
 
 #### 快速开始
 

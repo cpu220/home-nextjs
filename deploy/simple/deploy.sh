@@ -8,6 +8,11 @@ set -e
 # 定义根目录 - 脚本所在目录的父目录
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+# 加载.env文件中的环境变量
+if [ -f "$ROOT_DIR/.env" ]; then
+  export $(grep -v '^#' "$ROOT_DIR/.env" | xargs)
+fi
+
 # 定义本地镜像名称
 IMAGE_NAME="home-nextjs"
 
@@ -15,9 +20,22 @@ IMAGE_NAME="home-nextjs"
 TAG="latest"
 
 # 定义腾讯云仓库信息
-REGISTRY_DOMAIN="ccr.ccs.tencentyun.com"
-NAMESPACE="cc-docker-test"
-REGISTRY_IMAGE="$REGISTRY_DOMAIN/$NAMESPACE/cc-docker-test-name"
+# 从.env文件读取，不设置默认值，确保配置集中在.env中
+REGISTRY_DOMAIN=$REGISTRY_DOMAIN
+NAMESPACE=$NAMESPACE
+REGISTRY_IMAGE_NAME=$REGISTRY_IMAGE_NAME
+
+# 验证必要的环境变量是否已设置
+if [ -z "$REGISTRY_DOMAIN" ] || [ -z "$NAMESPACE" ] || [ -z "$REGISTRY_IMAGE_NAME" ]; then
+  echo "❌ 错误：缺少必要的Docker仓库配置环境变量"
+  echo "请在.env文件中设置以下变量："
+  echo "- REGISTRY_DOMAIN: Docker镜像仓库的域名"
+  echo "- NAMESPACE: Docker镜像仓库中的命名空间"
+  echo "- REGISTRY_IMAGE_NAME: Docker镜像在仓库中的名称"
+  exit 1
+fi
+
+REGISTRY_IMAGE="$REGISTRY_DOMAIN/$NAMESPACE/$REGISTRY_IMAGE_NAME"
 
 # 镜像信息文件路径
 IMAGE_INFO_FILE="$(dirname "${BASH_SOURCE[0]}")/image_info.txt"
