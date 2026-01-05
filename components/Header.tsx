@@ -1,10 +1,9 @@
-// 注意：由于需要使用 usePathname hook，这个组件必须是 Client Component
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function Navigation() {
+export default function Header() {
   const pathname = usePathname()
 
   const navItems = [
@@ -15,14 +14,14 @@ export default function Navigation() {
   ]
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
             我的作品集
           </Link>
           
-          <div className="flex space-x-1">
+          <nav className="flex space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -39,10 +38,9 @@ export default function Navigation() {
                 </Link>
               )
             })}
-          </div>
+          </nav>
         </div>
       </div>
-    </nav>
+    </header>
   )
 }
-

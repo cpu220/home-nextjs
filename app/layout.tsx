@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import Navigation from '@/components/Navigation'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: '个人作品集',
@@ -14,11 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body>
-        <Navigation />
-        {children}
+      <body className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   )
 }
-
