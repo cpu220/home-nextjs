@@ -17,6 +17,7 @@
     "docker:dev:build": "bash deploy/simple/build.sh --latest",
     "docker:dev:deploy": "bash deploy/simple/deploy.sh",
     "docker:dev:all": "bash deploy/simple/index.sh --latest",
+    "docker:run-local": "bash deploy/simple/run-local.sh",
     "deploy": "curl -X POST https://api.vercel.com/v1/integrations/deploy/prj_LzXsj6LQfxoyCBzyMNm5V9CNL2xF/5lX7ScxrNd"
   },
   "dependencies": {

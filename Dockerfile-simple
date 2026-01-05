@@ -44,6 +44,8 @@ WORKDIR /app
 # 复制构建产物
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# 复制public目录，确保静态资源（如图片）被包含
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # 复制data目录，确保portfolio.json等数据文件被包含
 COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 

@@ -145,6 +145,7 @@ pnpm start
 | `docker:dev:build` | `npm run docker:dev:build` | 执行 Docker 镜像构建脚本（开发环境，默认使用latest标签） |
 | `docker:dev:deploy` | `npm run docker:dev:deploy` | 将构建好的 Docker 镜像推送到腾讯云仓库（配合开发环境构建使用） |
 | `docker:dev:all` | `npm run docker:dev:all` | 依次执行构建和部署脚本，完成完整的 Docker 部署流程（开发环境） |
+| `docker:run-local` | `npm run docker:run-local` | 在本地运行已构建的 Docker 镜像，用于验证构建后的镜像是否正常工作 |
 
 ### Vercel 部署（推荐）
 
@@ -218,6 +219,44 @@ npm run docker:build -- --latest
 - `deploy/simple/build.sh` - Docker 镜像构建脚本，支持多平台和版本化标签
 - `deploy/simple/deploy.sh` - Docker 镜像部署脚本，将镜像推送到腾讯云仓库
 - `deploy/simple/index.sh` - 总控脚本，依次执行构建和部署操作
+- `deploy/simple/run-local.sh` - 本地运行脚本，用于验证构建后的 Docker 镜像
+
+#### 本地测试 Docker 镜像
+
+在推送到远程仓库之前，可以使用 `docker:run-local` 指令在本地验证构建后的镜像是否正常工作：
+
+```bash
+# 1. 构建 Docker 镜像
+npm run docker:build
+
+# 2. 在本地运行镜像进行测试
+npm run docker:run-local
+
+# 3. 访问应用验证功能
+# 浏览器打开: http://localhost:3001
+```
+
+**脚本功能说明**：
+- 自动读取 `deploy/simple/image_info.txt` 中的镜像版本信息
+- 检查本地镜像是否存在
+- 自动停止并删除旧容器（避免端口冲突）
+- 启动新容器并映射到本地 3001 端口
+- 显示容器状态和访问地址
+
+**常用容器管理命令**：
+```bash
+# 查看容器日志
+docker logs -f home-nextjs-local
+
+# 停止容器
+docker stop home-nextjs-local
+
+# 删除容器
+docker rm home-nextjs-local
+
+# 进入容器内部
+docker exec -it home-nextjs-local sh
+```
 
 详细的 Docker 部署说明请查看：[doc/docker-deployment-guide.md](./doc/docker-deployment-guide.md)
 

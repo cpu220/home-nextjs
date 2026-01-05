@@ -1,1 +1,1 @@
-git add . && git commit -m 'add deployment workflow' && git push origin main
+git add . && git commit -m 'feat: beian config' && git push origin main
