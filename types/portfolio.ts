@@ -5,6 +5,7 @@ export interface Project {
   url: string
   image?: string
   tags?: string[]
-  category?: string
+  category?: string,
+  preview?: string
 }
 

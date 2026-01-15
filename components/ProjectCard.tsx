@@ -23,6 +23,11 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         )}
         <div className="p-6">
+          <img
+            src={project.preview}
+            alt={project.title}
+            className="w-full h-48 object-cover"
+          />
           <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {project.title}
           </h3>
