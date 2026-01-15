@@ -1,3 +1,0 @@
-IMAGE_ID=f47864f97ce2
-TAG_TYPE=latest
-TAG=latest
