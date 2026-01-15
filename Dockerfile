@@ -47,7 +47,10 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# 复制home-static目录，确保静态资源（如图片）被包含
+COPY --from=builder --chown=nextjs:nodejs /app/home-static ./home-static
+# 创建public目录的符号链接，指向home-static目录
+RUN ln -s ./home-static ./public
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

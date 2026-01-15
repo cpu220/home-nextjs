@@ -18,15 +18,14 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-16">
         {/* 头部区域 */}
-        <header className="text-center mb-16">
+        {/* <header className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4 text-gray-900 dark:text-white">
             我的作品集
           </h1>
           <div className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             欢迎来到我的个人作品展示页面，这里汇集了我的一些项目作品
           </div>
-          <div>测试页面部署</div>
-        </header>
+        </header> */}
 
         {/* 作品网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

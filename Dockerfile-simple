@@ -44,10 +44,10 @@ WORKDIR /app
 # 复制构建产物
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# 复制public目录，确保静态资源（如图片）被包含
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-# 创建home-static目录并复制public目录的内容，以支持带前缀的静态资源访问
-RUN mkdir -p ./public/home-static && cp -r ./public/* ./public/home-static/ 2>/dev/null || true
+# 复制home-static目录，确保静态资源（如图片）被包含
+COPY --from=builder --chown=nextjs:nodejs /app/home-static ./home-static
+# 创建public目录的符号链接，指向home-static目录
+RUN ln -s ./home-static ./public
 # 复制data目录，确保portfolio.json等数据文件被包含
 COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 
