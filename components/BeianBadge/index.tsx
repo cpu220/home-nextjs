@@ -3,7 +3,7 @@
 import { BEIAN_CONFIG } from '@/app/const'
 import { useEffect, useState } from 'react'
 
-export default function BeianBadge() {
+const BeianBadge = ()=> {
   const [showBeian, setShowBeian] = useState(false)
 
   useEffect(() => {
@@ -37,3 +37,5 @@ export default function BeianBadge() {
     </a>
   )
 }
+
+export default BeianBadge

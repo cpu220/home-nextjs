@@ -4,7 +4,7 @@ interface ProjectCardProps {
   project: Project
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+const ProjectCard = ({ project }: ProjectCardProps) => {
   return (
     <a
       href={project.url}
@@ -76,3 +76,4 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   )
 }
 
+export default ProjectCard

@@ -1,0 +1,4 @@
+IMAGE_ID=e4faada2b476
+TAG_TYPE=versioned
+TAG=latest
+VERSION_TAG=v20260115-180309

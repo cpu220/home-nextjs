@@ -1,6 +1,6 @@
 //  'use client'
 import { Project } from '@/types/portfolio'
-import ProjectCard from '@/components/ProjectCard'
+import { ProjectCard ,TimeClock} from '@/components'
 import portfolioData from '@/data/portfolio.json'
 
 // 强制使用 SSR（服务端渲染）- 每次请求都会重新渲染
@@ -42,6 +42,8 @@ export default function Home() {
             </p>
           </div>
         )}
+
+        {/* <TimeClock /> */}
       </div>
     </main>
   )

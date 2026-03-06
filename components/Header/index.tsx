@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function Header() {
+import TimeClock from '../timeClock'
+
+const Header = ()=> {
   const pathname = usePathname()
 
   const navItems = [
@@ -15,12 +17,14 @@ export default function Header() {
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto ">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
-            我的作品集
+            见南山
           </Link>
-          
+          <div className="w-40 h-16">
+            <TimeClock />
+          </div>
           <nav className="flex space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href
@@ -44,3 +48,5 @@ export default function Header() {
     </header>
   )
 }
+
+export default Header
